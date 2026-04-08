@@ -1,6 +1,7 @@
 const { normalizePhone } = require('../utils/phone');
 const { normalizeAppId } = require('../utils/appId');
 const otpService = require('../services/otp.service');
+const otpCooldownService = require('../services/otpCooldown.service');
 const smsService = require('../services/sms/sms.service');
 
 function requireStringField(body, field) {
@@ -29,6 +30,42 @@ function validationError(res, message) {
   });
 }
 
+/**
+ * Shared validation for send / resend OTP (phone, appId, normalization).
+ * @returns {boolean} true if valid; otherwise sends error response and returns false.
+ */
+function assertSendOtpBodyValid(req, res) {
+  const check = requireStringField(req.body, 'phone');
+  if (!check.ok) {
+    validationError(res, check.message);
+    return false;
+  }
+
+  const appCheck = requireStringField(req.body, 'appId');
+  if (!appCheck.ok) {
+    validationError(res, appCheck.message);
+    return false;
+  }
+
+  try {
+    normalizePhone(req.body.phone);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Invalid phone number';
+    validationError(res, message);
+    return false;
+  }
+
+  try {
+    normalizeAppId(req.body.appId);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Invalid app id';
+    validationError(res, message);
+    return false;
+  }
+
+  return true;
+}
+
 const verifyReasonHttp = {
   invalid_input: { status: 400, message: 'Invalid request' },
   invalid_phone: { status: 400, message: 'Invalid phone number' },
@@ -40,35 +77,15 @@ const verifyReasonHttp = {
   mismatch: { status: 401, message: 'Invalid OTP' },
 };
 
-async function sendOtp(req, res, next) {
+/**
+ * Generate OTP, send SMS, respond (shared by sendOtp and resendOtp).
+ * Expects body already validated via {@link assertSendOtpBodyValid}.
+ */
+async function sendOtpImpl(req, res, next) {
   try {
-    const check = requireStringField(req.body, 'phone');
-    if (!check.ok) {
-      return validationError(res, check.message);
-    }
-
-    const appCheck = requireStringField(req.body, 'appId');
-    if (!appCheck.ok) {
-      return validationError(res, appCheck.message);
-    }
-
-    try {
-      normalizePhone(req.body.phone);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Invalid phone number';
-      return validationError(res, message);
-    }
-
-    try {
-      normalizeAppId(req.body.appId);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Invalid app id';
-      return validationError(res, message);
-    }
-
     const { phone, appId } = req.body;
 
-    const { otp, expiresAt, expiresInSeconds } = await otpService.generateOTP(
+    const { otp, expiresInSeconds } = await otpService.generateOTP(
       phone,
       appId,
     );
@@ -85,12 +102,38 @@ async function sendOtp(req, res, next) {
       });
     }
 
+    await otpCooldownService.applyAfterSuccessfulSend(phone, appId);
+
     return res.status(200).json({
       success: true,
       message: 'OTP sent successfully',
-      expiresAt,
-      expiresInSeconds,
+      expiresIn: expiresInSeconds,
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function sendOtp(req, res, next) {
+  try {
+    if (!assertSendOtpBodyValid(req, res)) {
+      return;
+    }
+    await sendOtpImpl(req, res, next);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function resendOtp(req, res, next) {
+  try {
+    if (!assertSendOtpBodyValid(req, res)) {
+      return;
+    }
+
+    const { phone, appId } = req.body;
+    await otpService.revokeOTP(phone, appId);
+    await sendOtpImpl(req, res, next);
   } catch (err) {
     next(err);
   }
@@ -141,5 +184,6 @@ async function verifyOtp(req, res, next) {
 
 module.exports = {
   sendOtp,
+  resendOtp,
   verifyOtp,
 };

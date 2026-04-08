@@ -72,6 +72,34 @@ function otpKey(normalizedAppId, normalizedPhone) {
 }
 
 /**
+ * Per app + phone send cooldown (short TTL between SMS sends).
+ * @param {string} normalizedAppId
+ * @param {string} normalizedPhone
+ */
+function otpCooldownKey(normalizedAppId, normalizedPhone) {
+  return `${OTP_KEY_PREFIX}cooldown:${normalizedAppId}:${normalizedPhone}`;
+}
+
+/**
+ * @param {string} key
+ * @returns {Promise<boolean>}
+ */
+async function existsKey(key) {
+  const c = await getClient();
+  return (await c.exists(key)) === 1;
+}
+
+/**
+ * @param {string} key
+ * @param {number} ttlSeconds
+ * @param {string} [value]
+ */
+async function setKeyWithExpire(key, ttlSeconds, value = '1') {
+  const c = await getClient();
+  await c.set(key, value, { EX: ttlSeconds });
+}
+
+/**
  * @param {string} key
  * @param {Record<string, string>} fields
  * @param {number} ttlSeconds
@@ -117,6 +145,9 @@ module.exports = {
   disconnectRedis,
   getClient,
   otpKey,
+  otpCooldownKey,
+  existsKey,
+  setKeyWithExpire,
   setHashWithExpire,
   getHashAll,
   deleteKey,
