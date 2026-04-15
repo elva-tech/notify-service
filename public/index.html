@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ELVA Notify Service</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    h1, h2 {
+      color: #222;
+    }
+    
+    .dark {
+        background: #121212;
+        color: #f5f5f5;
+    }
+
+    .dark .container {
+        background: #1e1e1e;
+    }
+    
+    .dark code,
+    .dark pre {
+        background: #2d2d2d;
+        color: #f5f5f5;
+    }
+
+    button {
+        padding: 6px 12px;
+        margin-bottom: 10px;
+        border: none;
+        background: #333;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: #555;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    code {
+      background: #eee;
+      padding: 8px;
+      display: block;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+
+    pre {
+        background: #eee;
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+    }
+
+    ul {
+      margin-left: 20px;
+    }
+
+    footer {
+      margin-top: 30px;
+      font-size: 14px;
+      color: gray;
+    }
+  </style>
+</head>
+
+<body>
+    <div class="container">
+
+    <h1>ELVA Notify Service</h1>
+    <button onclick="toggleDark()">🌙 Toggle Dark Mode</button>
+    <p>Internal communication service for OTP and notifications via SMS and Email.</p>
+
+    <h2>Base URL</h2>
+    <code>https://notify.elvatech.in</code>
+
+    <h2>Authentication</h2>
+    <p>Use API Key in header:</p>
+    <code>x-api-key: &lt;your-api-key&gt;</code>
+
+    <h2>OTP APIs</h2>
+    <ul>
+      <li>POST /otp/send</li>
+      <li>POST /otp/resend</li>
+      <li>POST /otp/verify</li>
+    </ul>
+
+    <code>
+{
+  "phone": "9876543210"
+}
+    </code>
+
+    <h2>Notification API</h2>
+    <ul>
+      <li>POST /notify/send</li>
+    </ul>
+
+    <code>
+{
+  "phone": "9876543210",
+  "message": "Your task is approved"
+}
+    </code>
+
+    <h2>Request Rules</h2>
+    <ul>
+      <li>Provide either phone OR email (not both)</li>
+      <li>API key required in header</li>
+      <li>OTP expires in 5 minutes</li>
+    </ul>
+
+    <h2>Sample CURL</h2>
+    <button onclick="copyCurl()">Copy CURL</button>
+    <pre id="curlCode">
+        curl -X POST https://notify.elvatech.in/otp/send \
+        -H "Content-Type: application/json" \
+        -H "x-api-key: YOUR_API_KEY" \
+        -d '{"phone":"9876543210"}'
+    </pre>
+
+    <footer>
+      <p>ELVA Tech</p>
+      <p>"Internal Service – Not Public API"</p>
+    </footer>
+</div>
+<script>
+function copyCurl() {
+    const text = document.getElementById("curlCode").innerText;
+    navigator.clipboard.writeText(text);
+    alert("Copied!");
+}
+function toggleDark() {
+    document.body.classList.toggle("dark");
+}
+</script>
+</body>
+</html>
