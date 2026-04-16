@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ELVA Notify Service</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    h1, h2 {
+      color: #222;
+    }
+    
+    .dark {
+      background: #121212;
+      color: #f5f5f5;
+    }
+    
+    .dark .container {
+      background: #1e1e1e;
+    }
+
+    .dark h1,
+    .dark h2,
+    .dark h3 {
+      color: #ffffff;
+    }
+    
+    .dark p,
+    .dark li {
+      color: #e0e0e0;
+    }
+
+    .dark code,
+    .dark pre {
+      background: #2d2d2d;
+      color: #f5f5f5;
+    }
+
+    .dark button {
+      background: #444;
+      color: #fff;
+    }
+    
+    .dark button:hover {
+      background: #666;
+    }
+
+    button {
+        padding: 6px 12px;
+        margin-bottom: 10px;
+        border: none;
+        background: #333;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: #555;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    code {
+      background: #eee;
+      padding: 8px;
+      display: block;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+
+    pre {
+        background: #eee;
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+    }
+
+    ul {
+      margin-left: 20px;
+    }
+
+    footer {
+      margin-top: 30px;
+      font-size: 14px;
+      color: gray;
+    }
+  </style>
+</head>
+
+<body>
+    <div class="container">
+
+    <h1>ELVA Notify Service</h1>
+    <button onclick="toggleDark()">🌙 Toggle Dark Mode</button>
+    <p>Internal communication service for OTP and notifications via SMS and Email.</p>
+
+    <h2>Base URL</h2>
+    <code>https://notify.elvatech.in</code>
+    
+    <h2>Authentication</h2>
+    <p>All endpoints require the following credentials:</p>
+
+    <ul>
+      <li><b>appId</b>: Application identifier</li>
+      <li><b>apiKey</b>: Secret key for that application</li>
+    </ul>
+
+    <pre>{
+      "appId": "my-app",
+      "apiKey": "your-secret-key"
+    }</pre>
+
+    <h2>OTP APIs</h2>
+
+    <h3>POST /otp/send</h3>
+    <p>Generates a 6-digit OTP and sends it via SMS.</p>
+
+    <pre>{
+      "appId": "my-app",
+      "apiKey": "your-secret-key",
+      "phone": "+919876543210"
+    }</pre>
+
+    <p>Response:</p>
+    <pre>{
+      "success": true,
+      "message": "OTP sent successfully",
+      "expiresIn": 300
+    }</pre>
+
+    <hr>
+
+    <h3>POST /otp/resend</h3>
+    <p>Resends OTP after invalidating previous one.</p>
+
+    <pre>{
+      "appId": "my-app",
+      "apiKey": "your-secret-key",
+      "phone": "+919876543210"
+    }</pre>
+    
+    <hr>
+
+    <h3>POST /otp/verify</h3>
+    <p>Verifies OTP entered by user.</p>
+
+    <pre>{
+      "appId": "my-app",
+      "apiKey": "your-secret-key",
+      "phone": "+919876543210",
+      "otp": "123456"
+    }</pre>
+
+    <p>Response:</p>
+    <pre>{
+      "success": true,
+      "message": "OTP verified successfully"
+    }</pre>
+    
+    <h2>Notification API</h2>
+    <h3>POST /notify/send</h3>
+    <p>Sends notification message via SMS.</p>
+    
+    <pre>{
+      "phone": "9876543210",
+      "message": "Your task is approved"
+    }</pre>
+
+    <h2>Request Rules</h2>
+    <ul>
+      <li>Provide either phone OR email (not both)</li>
+      <li>API key required in header</li>
+      <li>OTP expires in 5 minutes</li>
+    </ul>
+
+    <h2>Error Response</h2>
+    <pre>{
+      "success": false,
+      "error": "validation_error",
+      "message": "Invalid input"
+    }</pre>
+
+    <h2>Rate Limiting</h2>
+    <ul>
+      <li>3 OTP requests per minute</li>
+      <li>10 OTP requests per hour</li>
+      <li>Applies per phone number</li>
+    </ul>
+
+    <h2>Health Check</h2>
+    <code>GET /health</code>
+    <p>Used to verify service status</p>
+
+    <h2>Sample CURL</h2>
+    <button onclick="copyCurl()">Copy CURL</button>
+    <pre id="curlCode">
+        curl -X POST https://notify.elvatech.in/otp/send \
+        -H "Content-Type: application/json" \
+        -H "x-api-key: YOUR_API_KEY" \
+        -d '{"phone":"9876543210"}'
+    </pre>
+
+    <footer>
+      <p>ELVA Tech</p>
+      <p>"Internal Service – Not Public API"</p>
+    </footer>
+</div>
+<script>
+function copyCurl() {
+    const text = document.getElementById("curlCode").innerText;
+    navigator.clipboard.writeText(text);
+    alert("Copied!");
+}
+function toggleDark() {
+    document.body.classList.toggle("dark");
+}
+</script>
+</body>
+</html>
