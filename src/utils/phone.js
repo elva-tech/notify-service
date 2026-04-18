@@ -6,6 +6,7 @@ function normalizePhone(phone) {
   if (!digits) {
     throw new Error('phone must contain at least one digit');
   }
+  console.log(`Normalized phone: ${digits}`);
   return digits;
 }
 
