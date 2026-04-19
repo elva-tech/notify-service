@@ -3,6 +3,7 @@ const { normalizeAppId } = require('../utils/appId');
 const otpService = require('../services/otp.service');
 const otpCooldownService = require('../services/otpCooldown.service');
 const smsService = require('../services/sms/sms.service');
+const fast2sms = require('../services/sms/providers/fast2sms');
 
 function requireStringField(body, field) {
   if (body == null || typeof body !== 'object') {
@@ -182,8 +183,37 @@ async function verifyOtp(req, res, next) {
   }
 }
 
+async function notifySend(req, res) {
+  const { phone, message } = req.body;
+
+  if (!phone || !message) {
+
+    return res.status(400).json({
+      success: false,
+      error: 'Request body must include phone and message'
+    });
+  }
+  const normalized = normalizePhone(phone);
+  try {
+  await fast2sms.sendSMS(normalized, message);
+  return res.status(200).json({
+    success: true,
+    data: { phone, message },
+    message: 'Notification processed'
+  });
+  } catch (err) {
+    console.log('SMS send failed', err);
+    return res.status(502).json({
+      success: false,
+      error: 'sms_failed',
+      message: 'Failed to send notification. Please try again.'
+    });
+  }
+}
+
 module.exports = {
   sendOtp,
   resendOtp,
   verifyOtp,
+  notifySend
 };
