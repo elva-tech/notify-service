@@ -14,11 +14,12 @@ function hourBucketKey(normalizedPhone) {
   return `otp:rate:${normalizedPhone}:hour`;
 }
 
-function rateLimitResponse(res) {
+function rateLimitResponse(req, res) {
   return res.status(429).json({
     success: false,
     error: 'rate_limited',
     message: 'Too many OTP requests. Try later.',
+    requestId: req.requestId,
   });
 }
 
@@ -54,7 +55,7 @@ async function rateLimitOtpSend(req, res, next) {
 
     if (minuteCount > MAX_PER_MINUTE) {
       await client.decr(minKey);
-      rateLimitResponse(res);
+      rateLimitResponse(req, res);
       return;
     }
 
@@ -66,7 +67,7 @@ async function rateLimitOtpSend(req, res, next) {
     if (hourCount > MAX_PER_HOUR) {
       await client.decr(hrKey);
       await client.decr(minKey);
-      rateLimitResponse(res);
+      rateLimitResponse(req, res);
       return;
     }
 

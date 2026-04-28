@@ -3,6 +3,7 @@ function getHealth(req, res) {
     status: 'ok',
     service: 'elva-otp-service',
     timestamp: new Date().toISOString(),
+    requestId: req.requestId,
   });
 }
 

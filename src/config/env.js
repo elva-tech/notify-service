@@ -24,6 +24,12 @@ module.exports = {
   fast2sms: {
     apiKey: process.env.FAST2SMS_API_KEY,
   },
+  sendgrid: {
+    apiKey: process.env.SENDGRID_API_KEY,
+  },
+  email: {
+    from: process.env.EMAIL_FROM,
+  },
   redis: {
     url: process.env.REDIS_URL || null,
     host: process.env.REDIS_HOST || '127.0.0.1',
