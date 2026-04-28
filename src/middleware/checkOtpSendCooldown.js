@@ -2,11 +2,12 @@ const redis = require('../services/redis.service');
 const { normalizePhone } = require('../utils/phone');
 const { normalizeAppId } = require('../utils/appId');
 
-function cooldownActiveResponse(res) {
+function cooldownActiveResponse(req, res) {
   return res.status(429).json({
     success: false,
     error: 'cooldown_active',
     message: 'Please wait before requesting another OTP',
+    requestId: req.requestId,
   });
 }
 
@@ -37,7 +38,7 @@ async function checkOtpSendCooldown(req, res, next) {
     const key = redis.otpCooldownKey(normalizedAppId, normalizedPhone);
     const active = await redis.existsKey(key);
     if (active) {
-      cooldownActiveResponse(res);
+      cooldownActiveResponse(req, res);
       return;
     }
     next();

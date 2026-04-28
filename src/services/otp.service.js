@@ -1,5 +1,6 @@
 const { normalizePhone } = require('../utils/phone');
 const { normalizeAppId } = require('../utils/appId');
+const { normalizeEmail } = require('../utils/email');
 const {
   generateSixDigitOtp,
   randomSalt,
@@ -25,17 +26,34 @@ function isCompleteOtpRecord(record) {
 }
 
 /**
- * @param {string} phone
+ * @param {string} recipient
+ * @returns {string}
+ */
+function normalizeRecipient(recipient) {
+  if (typeof recipient !== 'string') {
+    throw new TypeError('recipient must be a string');
+  }
+
+  const trimmed = recipient.trim();
+  if (trimmed.includes('@')) {
+    return normalizeEmail(trimmed);
+  }
+
+  return normalizePhone(trimmed);
+}
+
+/**
+ * @param {string} recipient
  * @param {string} appId
  * @returns {Promise<{ otp: string, expiresAt: number, expiresInSeconds: number }>}
  */
-async function generateOTP(phone, appId) {
-  const phoneKey = normalizePhone(phone);
+async function generateOTP(recipient, appId) {
+  const recipientKey = normalizeRecipient(recipient);
   const appKey = normalizeAppId(appId);
   const otp = generateSixDigitOtp();
   const salt = randomSalt();
   const hashBuf = hashOtp(otp, salt);
-  const key = redis.otpKey(appKey, phoneKey);
+  const key = redis.otpKey(appKey, recipientKey);
 
   await redis.setHashWithExpire(
     key,
@@ -55,12 +73,12 @@ async function generateOTP(phone, appId) {
 }
 
 /**
- * @param {string} phone
+ * @param {string} recipient
  * @param {string} otp
  * @param {string} appId
  * @returns {Promise<{ valid: true } | { valid: false, reason: string }>}
  */
-async function verifyOTP(phone, otp, appId) {
+async function verifyOTP(recipient, otp, appId) {
   if (typeof otp !== 'string') {
     return { valid: false, reason: 'invalid_input' };
   }
@@ -69,11 +87,11 @@ async function verifyOTP(phone, otp, appId) {
     return { valid: false, reason: 'invalid_input' };
   }
 
-  let phoneKey;
+  let recipientKey;
   try {
-    phoneKey = normalizePhone(phone);
+    recipientKey = normalizeRecipient(recipient);
   } catch {
-    return { valid: false, reason: 'invalid_phone' };
+    return { valid: false, reason: 'invalid_contact' };
   }
 
   let appKey;
@@ -88,7 +106,7 @@ async function verifyOTP(phone, otp, appId) {
     return { valid: false, reason: 'invalid_otp_format' };
   }
 
-  const key = redis.otpKey(appKey, phoneKey);
+  const key = redis.otpKey(appKey, recipientKey);
   const record = await redis.getHashAll(key);
 
   if (!isCompleteOtpRecord(record)) {
@@ -125,13 +143,13 @@ async function verifyOTP(phone, otp, appId) {
 
 /**
  * Removes any stored OTP for the phone and app (e.g. after a failed SMS send).
- * @param {string} phone
+ * @param {string} recipient
  * @param {string} appId
  */
-async function revokeOTP(phone, appId) {
-  const phoneKey = normalizePhone(phone);
+async function revokeOTP(recipient, appId) {
+  const recipientKey = normalizeRecipient(recipient);
   const appKey = normalizeAppId(appId);
-  await redis.deleteKey(redis.otpKey(appKey, phoneKey));
+  await redis.deleteKey(redis.otpKey(appKey, recipientKey));
 }
 
 module.exports = {
