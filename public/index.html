@@ -2,94 +2,310 @@
 <html>
 <head>
   <title>ELVA Notify Service</title>
+  <link rel="icon" type="image/png" href="/elva-logo.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 20px;
+      padding: 24px;
       background: #f5f5f5;
       color: #333;
     }
 
-    h1, h2 {
+    h1, h2, h3, h4 {
       color: #222;
     }
-    
+
     .dark {
       background: #121212;
       color: #f5f5f5;
     }
-    
+
     .dark .container {
       background: #1e1e1e;
     }
 
     .dark h1,
     .dark h2,
-    .dark h3 {
+    .dark h3,
+    .dark h4 {
       color: #ffffff;
     }
-    
+
     .dark p,
     .dark li {
       color: #e0e0e0;
     }
 
-    .dark code,
-    .dark pre {
+    .dark pre,
+    .dark code {
       background: #2d2d2d;
       color: #f5f5f5;
     }
 
-    .dark button {
-      background: #444;
-      color: #fff;
+    .container {
+      max-width: 980px;
+      margin: auto;
+      background: white;
+      padding: 26px;
+      border-radius: 10px;
     }
-    
-    .dark button:hover {
-      background: #666;
+
+    .header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      width: 60px;
+      height: 60px;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0;
+    }
+
+    .dark .logo {
+      filter: drop-shadow(0 0 6px rgba(96,165,250,0.4));
     }
 
     button {
-        padding: 6px 12px;
-        margin-bottom: 10px;
-        border: none;
-        background: #333;
-        color: white;
-        border-radius: 4px;
-        cursor: pointer;
+      padding: 8px 14px;
+      border: none;
+      background: #333;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 10px;
     }
 
     button:hover {
-        background: #555;
+      background: #555;
     }
 
-    .container {
-      max-width: 800px;
-      margin: auto;
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-bottom: 20px;
+      cursor: pointer;
+    }
+
+    .toggle-track {
+      width: 60px;
+      height: 30px;
+      border-radius: 50px;
+      position: relative;
+      background: #e5e7eb;
+      transition: all 0.3s ease;
+    }
+
+    .toggle-thumb {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      top: 3px;
+      left: 3px;
       background: white;
+      transition: transform 0.3s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+
+    .icon {
+      font-size: 16px;
+      opacity: 0.4;
+      transition: all 0.3s ease;
+    }
+
+    .dark .toggle-track {
+      background: #374151;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
+    }
+
+    .dark .toggle-thumb {
+      transform: translateX(30px);
+    }
+
+    body:not(.dark) .sun {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+
+    .dark .moon {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+
+    .theme-toggle:hover .toggle-thumb {
+      transform: scale(1.05);
+    }
+
+    .dark .theme-toggle:hover .toggle-thumb {
+      transform: scale(1.05) translateX(30px);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      border-bottom: 2px solid #e5e7eb;
+      margin-top: 20px;
+      position: relative;
+    }
+
+    .dark .tabs {
+      border-bottom: 2px solid #444;
+    }
+
+    .tab {
+      padding: 10px 18px;
+      cursor: pointer;
+      border-radius: 8px 8px 0 0;
+      background: transparent;
+      color: #666;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .tab:hover {
+      color: #000;
+    }
+
+    .tab.active {
+      background: white;
+      color: #000;
+      font-weight: 600;
+      box-shadow: 0 -2px 6px rgba(0,0,0,0.08);
+      transform: translateY(1px);
+    }
+
+    .dark .tab.active {
+      background: #1e1e1e;
+      color: #fff;
+      box-shadow: 0 -2px 6px rgba(0,0,0,0.6);
+    }
+
+    .tab-indicator {
+      position: absolute;
+      bottom: -2px;
+      height: 2px;
+      background: #2563eb;
+      width: 0;
+      left: 0;
+      transition: all 0.3s ease;
+    }
+
+    .dark .tab-indicator {
+      background: #60a5fa;
+    }
+
+    .main-tab {
+      display: none;
+      border: 1px solid #d1d5db;
+      border-top: none;
       padding: 20px;
+      border-radius: 0 8px 8px 8px;
+      background: white;
+    }
+
+    .dark .main-tab {
+      background: #1e1e1e;
+      border-color: #444;
+    }
+
+    .main-tab.active {
+      display: block;
+    }
+
+    .section-card {
+      border: 1px solid #e5e7eb;
       border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .dark .section-card {
+      border-color: #444;
+    }
+
+    .api-item {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 12px;
+    }
+
+    .dark .api-item {
+      border-color: #3f3f46;
+    }
+
+    .api-item h4 {
+      margin: 0 0 8px 0;
+    }
+
+    .api-item p {
+      margin: 8px 0;
+    }
+
+    .copy-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+      margin-bottom: 6px;
+    }
+
+    pre {
+      background: #eee;
+      padding: 12px;
+      border-radius: 5px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      margin-top: 10px;
+      border-radius: 6px;
+      padding: 10px;
+      font-family: monospace;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      color: #111827;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    .dark textarea {
+      background: #111827;
+      color: #f9fafb;
+      border-color: #374151;
+    }
+
+    pre {
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
+    pre.success {
+      color: #22c55e;
+    }
+
+    pre.error {
+      color: #ef4444;
     }
 
     code {
       background: #eee;
-      padding: 8px;
-      display: block;
-      margin: 10px 0;
-      border-radius: 5px;
-    }
-
-    pre {
-        background: #eee;
-        padding: 10px;
-        border-radius: 5px;
-        overflow-x: auto;
-    }
-
-    ul {
-      margin-left: 20px;
+      padding: 2px 6px;
+      border-radius: 4px;
     }
 
     footer {
@@ -101,132 +317,390 @@
 </head>
 
 <body>
-    <div class="container">
+  <div class="container">
+    <div class="header">
+      <img src="/elva-logo.png" alt="ELVA Logo" class="logo">
+      <h1>ELVA Notify Service</h1>
+    </div>
+    <div class="theme-toggle" onclick="toggleDark()">
+      <span class="icon sun">☀️</span>
+      <div class="toggle-track">
+        <div class="toggle-thumb"></div>
+      </div>
+      <span class="icon moon">🌙</span>
+    </div>
+    <p>Internal communication service for OTP and notifications via SMS and EMAIL.</p>
 
-    <h1>ELVA Notify Service</h1>
-    <button onclick="toggleDark()">🌙 Toggle Dark Mode</button>
-    <p>Internal communication service for OTP and notifications via SMS and Email.</p>
-
-    <h2>Base URL</h2>
+    <h3>Base URL</h3>
     <code>https://notify.elvatech.in</code>
-    
-    <h2>Authentication</h2>
-    <p>All endpoints require the following credentials:</p>
 
-    <ul>
-      <li><b>appId</b>: Application identifier</li>
-      <li><b>apiKey</b>: Secret key for that application</li>
-    </ul>
+    <h3>Authentication</h3>
+    <p>All protected endpoints require <code>appId</code> and <code>apiKey</code> in the request body.</p>
+    <div class="copy-row">
+      <button onclick="copyText('authPayload')">Copy</button>
+    </div>
+    <pre id="authPayload">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key"
+}</pre>
 
-    <pre>{
-      "appId": "my-app",
-      "apiKey": "your-secret-key"
-    }</pre>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('sms', this)">SMS</div>
+      <div class="tab" onclick="switchTab('email', this)">EMAIL</div>
+      <div class="tab-indicator"></div>
+    </div>
 
-    <h2>OTP APIs</h2>
+    <div id="smsTab" class="main-tab active">
+      <div class="section-card">
+        <h2>OTP APIs (SMS)</h2>
 
-    <h3>POST /otp/send</h3>
-    <p>Generates a 6-digit OTP and sends it via SMS.</p>
+        <div class="api-item">
+          <h4>POST /otp/send</h4>
+          <p>Generate and send OTP to a phone number via SMS.</p>
+          <div class="copy-row">
+            <button onclick="copyText('smsOtpSendJson')">Copy JSON</button>
+            <button onclick="copyText('smsOtpSendCurl')">Copy CURL</button>
+          </div>
+          <pre id="smsOtpSendJson">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "phone": "919876543210"
+}</pre>
+          <pre id="smsOtpSendCurl">curl -X POST https://notify.elvatech.in/otp/send \
+  -H "Content-Type: application/json" \
+  -d '{"appId":"my-app","apiKey":"your-secret-key","phone":"919876543210"}'</pre>
+          <p><b>Live API Tester</b></p>
+          <!-- <p style="font-size:12px;color:gray;">Uses current environment automatically (localhost / production)</p> -->
+          <textarea id="otpSendSmsInput">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "phone": "919876543210"
+}</textarea>
+          <button onclick="sendRequest('/otp/send', 'otpSendSmsInput', 'otpSendSmsOutput', this)">Send Request</button>
+          <pre id="otpSendSmsOutput"></pre>
+        </div>
 
-    <pre>{
-      "appId": "my-app",
-      "apiKey": "your-secret-key",
-      "phone": "+919876543210"
-    }</pre>
+        <div class="api-item">
+          <h4>POST /otp/resend</h4>
+          <p>Regenerate OTP and resend it to the same phone number.</p>
+          <div class="copy-row">
+            <button onclick="copyText('smsOtpResendJson')">Copy JSON</button>
+            <button onclick="copyText('smsOtpResendCurl')">Copy CURL</button>
+          </div>
+          <pre id="smsOtpResendJson">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "phone": "919876543210"
+}</pre>
+          <pre id="smsOtpResendCurl">curl -X POST https://notify.elvatech.in/otp/resend \
+  -H "Content-Type: application/json" \
+  -d '{"appId":"my-app","apiKey":"your-secret-key","phone":"919876543210"}'</pre>
+          <p><b>Live API Tester</b></p>
+          <!-- <p style="font-size:12px;color:gray;">Uses current environment automatically (localhost / production)</p> -->
+          <textarea id="otpResendSmsInput">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "phone": "919876543210"
+}</textarea>
+          <button onclick="sendRequest('/otp/resend', 'otpResendSmsInput', 'otpResendSmsOutput', this)">Send Request</button>
+          <pre id="otpResendSmsOutput"></pre>
+        </div>
 
-    <p>Response:</p>
-    <pre>{
-      "success": true,
-      "message": "OTP sent successfully",
-      "expiresIn": 300
-    }</pre>
+        <div class="api-item">
+          <h4>POST /otp/verify</h4>
+          <p>Verify OTP received on SMS.</p>
+          <div class="copy-row">
+            <button onclick="copyText('smsOtpVerifyJson')">Copy JSON</button>
+            <button onclick="copyText('smsOtpVerifyCurl')">Copy CURL</button>
+          </div>
+          <pre id="smsOtpVerifyJson">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "phone": "919876543210",
+  "otp": "123456"
+}</pre>
+          <pre id="smsOtpVerifyCurl">curl -X POST https://notify.elvatech.in/otp/verify \
+  -H "Content-Type: application/json" \
+  -d '{"appId":"my-app","apiKey":"your-secret-key","phone":"919876543210","otp":"123456"}'</pre>
+          <p><b>Live API Tester</b></p>
+          <!-- <p style="font-size:12px;color:gray;">Uses current environment automatically (localhost / production)</p> -->
+          <textarea id="otpVerifySmsInput">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "phone": "919876543210",
+  "otp": "123456"
+}</textarea>
+          <button onclick="sendRequest('/otp/verify', 'otpVerifySmsInput', 'otpVerifySmsOutput', this)">Send Request</button>
+          <pre id="otpVerifySmsOutput"></pre>
+        </div>
+      </div>
 
-    <hr>
+      <div class="section-card">
+        <h2>Notify API (SMS)</h2>
+        <div class="api-item">
+          <h4>POST /notify</h4>
+          <p>Send direct SMS notifications through the unified notify API.</p>
+          <div class="copy-row">
+            <button onclick="copyText('smsNotifyJson')">Copy JSON</button>
+            <button onclick="copyText('smsNotifyCurl')">Copy CURL</button>
+          </div>
+          <pre id="smsNotifyJson">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "channel": "SMS",
+  "to": ["919876543210"],
+  "message": "Your task is approved"
+}</pre>
+          <pre id="smsNotifyCurl">curl -X POST https://notify.elvatech.in/notify \
+  -H "Content-Type: application/json" \
+  -d '{"appId":"my-app","apiKey":"your-secret-key","channel":"SMS","to":["919876543210"],"message":"Your task is approved"}'</pre>
+          <p><b>Live API Tester</b></p>
+          <!-- <p style="font-size:12px;color:gray;">Uses current environment automatically (localhost / production)</p> -->
+          <textarea id="notifySmsInput">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "channel": "SMS",
+  "to": ["919876543210"],
+  "message": "Your task is approved"
+}</textarea>
+          <button onclick="sendRequest('/notify', 'notifySmsInput', 'notifySmsOutput', this)">Send Request</button>
+          <pre id="notifySmsOutput"></pre>
+        </div>
+      </div>
+    </div>
 
-    <h3>POST /otp/resend</h3>
-    <p>Resends OTP after invalidating previous one.</p>
+    <div id="emailTab" class="main-tab">
+      <div class="section-card">
+        <h2>OTP APIs (EMAIL)</h2>
 
-    <pre>{
-      "appId": "my-app",
-      "apiKey": "your-secret-key",
-      "phone": "+919876543210"
-    }</pre>
-    
-    <hr>
+        <div class="api-item">
+          <h4>POST /otp/send</h4>
+          <p>Generate and send OTP to an email address.</p>
+          <div class="copy-row">
+            <button onclick="copyText('emailOtpSendJson')">Copy JSON</button>
+            <button onclick="copyText('emailOtpSendCurl')">Copy CURL</button>
+          </div>
+          <pre id="emailOtpSendJson">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "channel": "EMAIL",
+  "email": "user@example.com"
+}</pre>
+          <pre id="emailOtpSendCurl">curl -X POST https://notify.elvatech.in/otp/send \
+  -H "Content-Type: application/json" \
+  -d '{"appId":"my-app","apiKey":"your-secret-key","channel":"EMAIL","email":"user@example.com"}'</pre>
+          <p><b>Live API Tester</b></p>
+          <!-- <p style="font-size:12px;color:gray;">Uses current environment automatically (localhost / production)</p> -->
+          <textarea id="otpSendEmailInput">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "channel": "EMAIL",
+  "email": "user@example.com"
+}</textarea>
+          <button onclick="sendRequest('/otp/send', 'otpSendEmailInput', 'otpSendEmailOutput', this)">Send Request</button>
+          <pre id="otpSendEmailOutput"></pre>
+        </div>
 
-    <h3>POST /otp/verify</h3>
-    <p>Verifies OTP entered by user.</p>
+        <div class="api-item">
+          <h4>POST /otp/resend</h4>
+          <p>Regenerate OTP and resend it to the same email address.</p>
+          <div class="copy-row">
+            <button onclick="copyText('emailOtpResendJson')">Copy JSON</button>
+            <button onclick="copyText('emailOtpResendCurl')">Copy CURL</button>
+          </div>
+          <pre id="emailOtpResendJson">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "channel": "EMAIL",
+  "email": "user@example.com"
+}</pre>
+          <pre id="emailOtpResendCurl">curl -X POST https://notify.elvatech.in/otp/resend \
+  -H "Content-Type: application/json" \
+  -d '{"appId":"my-app","apiKey":"your-secret-key","channel":"EMAIL","email":"user@example.com"}'</pre>
+          <p><b>Live API Tester</b></p>
+          <!-- <p style="font-size:12px;color:gray;">Uses current environment automatically (localhost / production)</p> -->
+          <textarea id="otpResendEmailInput">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "channel": "EMAIL",
+  "email": "user@example.com"
+}</textarea>
+          <button onclick="sendRequest('/otp/resend', 'otpResendEmailInput', 'otpResendEmailOutput', this)">Send Request</button>
+          <pre id="otpResendEmailOutput"></pre>
+        </div>
 
-    <pre>{
-      "appId": "my-app",
-      "apiKey": "your-secret-key",
-      "phone": "+919876543210",
-      "otp": "123456"
-    }</pre>
+        <div class="api-item">
+          <h4>POST /otp/verify</h4>
+          <p>Verify OTP received via email.</p>
+          <div class="copy-row">
+            <button onclick="copyText('emailOtpVerifyJson')">Copy JSON</button>
+            <button onclick="copyText('emailOtpVerifyCurl')">Copy CURL</button>
+          </div>
+          <pre id="emailOtpVerifyJson">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "email": "user@example.com",
+  "otp": "123456"
+}</pre>
+          <pre id="emailOtpVerifyCurl">curl -X POST https://notify.elvatech.in/otp/verify \
+  -H "Content-Type: application/json" \
+  -d '{"appId":"my-app","apiKey":"your-secret-key","email":"user@example.com","otp":"123456"}'</pre>
+          <p><b>Live API Tester</b></p>
+          <!-- <p style="font-size:12px;color:gray;">Uses current environment automatically (localhost / production)</p> -->
+          <textarea id="otpVerifyEmailInput">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "email": "user@example.com",
+  "otp": "123456"
+}</textarea>
+          <button onclick="sendRequest('/otp/verify', 'otpVerifyEmailInput', 'otpVerifyEmailOutput', this)">Send Request</button>
+          <pre id="otpVerifyEmailOutput"></pre>
+        </div>
+      </div>
 
-    <p>Response:</p>
-    <pre>{
-      "success": true,
-      "message": "OTP verified successfully"
-    }</pre>
-    
-    <h2>Notification API</h2>
-    <h3>POST /notify/send</h3>
-    <p>Sends notification message via SMS.</p>
-    
-    <pre>{
-      "phone": "9876543210",
-      "message": "Your task is approved"
-    }</pre>
+      <div class="section-card">
+        <h2>Notify API (EMAIL)</h2>
 
-    <h2>Request Rules</h2>
-    <ul>
-      <li>Provide either phone OR email (not both)</li>
-      <li>API key required in header</li>
-      <li>OTP expires in 5 minutes</li>
-    </ul>
+        <div class="api-item">
+          <h4>POST /notify (HTML)</h4>
+          <p>Send EMAIL notification with direct HTML content.</p>
+          <div class="copy-row">
+            <button onclick="copyText('emailNotifyHtmlJson')">Copy JSON</button>
+            <button onclick="copyText('emailNotifyHtmlCurl')">Copy CURL</button>
+          </div>
+          <pre id="emailNotifyHtmlJson">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "channel": "EMAIL",
+  "to": ["user@example.com"],
+  "subject": "Welcome",
+  "html": "&lt;h1&gt;Hello&lt;/h1&gt;"
+}</pre>
+          <pre id="emailNotifyHtmlCurl">curl -X POST https://notify.elvatech.in/notify \
+  -H "Content-Type: application/json" \
+  -d '{"appId":"my-app","apiKey":"your-secret-key","channel":"EMAIL","to":["user@example.com"],"subject":"Welcome","html":"&lt;h1&gt;Hello&lt;/h1&gt;"}'</pre>
+          <p><b>Live API Tester</b></p>
+          <!-- <p style="font-size:12px;color:gray;">Uses current environment automatically (localhost / production)</p> -->
+          <textarea id="notifyEmailInput">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "channel": "EMAIL",
+  "to": ["user@example.com"],
+  "subject": "Welcome",
+  "html": "<h1>Hello</h1>"
+}</textarea>
+          <button onclick="sendRequest('/notify', 'notifyEmailInput', 'notifyEmailOutput', this)">Send Request</button>
+          <pre id="notifyEmailOutput"></pre>
+        </div>
 
-    <h2>Error Response</h2>
-    <pre>{
-      "success": false,
-      "error": "validation_error",
-      "message": "Invalid input"
-    }</pre>
-
-    <h2>Rate Limiting</h2>
-    <ul>
-      <li>3 OTP requests per minute</li>
-      <li>10 OTP requests per hour</li>
-      <li>Applies per phone number</li>
-    </ul>
-
-    <h2>Health Check</h2>
-    <code>GET /health</code>
-    <p>Used to verify service status</p>
-
-    <h2>Sample CURL</h2>
-    <button onclick="copyCurl()">Copy CURL</button>
-    <pre id="curlCode">
-        curl -X POST https://notify.elvatech.in/otp/send \
-        -H "Content-Type: application/json" \
-        -H "x-api-key: YOUR_API_KEY" \
-        -d '{"phone":"9876543210"}'
-    </pre>
+        <div class="api-item">
+          <h4>POST /notify (Template)</h4>
+          <p>Send EMAIL notification using a template name and data payload.</p>
+          <div class="copy-row">
+            <button onclick="copyText('emailNotifyTemplateJson')">Copy JSON</button>
+            <button onclick="copyText('emailNotifyTemplateCurl')">Copy CURL</button>
+          </div>
+          <pre id="emailNotifyTemplateJson">{
+  "appId": "my-app",
+  "apiKey": "your-secret-key",
+  "channel": "EMAIL",
+  "to": ["user@example.com"],
+  "subject": "OTP",
+  "template": "otp_email",
+  "data": {
+    "otp": "123456"
+  }
+}</pre>
+          <pre id="emailNotifyTemplateCurl">curl -X POST https://notify.elvatech.in/notify \
+  -H "Content-Type: application/json" \
+  -d '{"appId":"my-app","apiKey":"your-secret-key","channel":"EMAIL","to":["user@example.com"],"subject":"OTP","template":"otp_email","data":{"otp":"123456"}}'</pre>
+        </div>
+      </div>
+    </div>
 
     <footer>
       <p>ELVA Tech</p>
       <p>"Internal Service – Not Public API"</p>
     </footer>
-</div>
-<script>
-function copyCurl() {
-    const text = document.getElementById("curlCode").innerText;
-    navigator.clipboard.writeText(text);
-    alert("Copied!");
-}
-function toggleDark() {
-    document.body.classList.toggle("dark");
-}
-</script>
+  </div>
+
+  <script>
+    function toggleDark() {
+      document.body.classList.toggle("dark");
+    }
+
+    function copyText(id) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text);
+      alert("Copied!");
+    }
+
+    const BASE_URL =
+      location.hostname === "localhost"
+        ? "http://localhost:4000"
+        : "https://notify.elvatech.in";
+
+    async function sendRequest(endpoint, inputId, outputId, btn) {
+      const body = document.getElementById(inputId).value;
+      const outputEl = document.getElementById(outputId);
+
+      try {
+        btn.innerText = "Sending...";
+        btn.disabled = true;
+
+        const start = Date.now();
+
+        const res = await fetch(BASE_URL + endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body
+        });
+
+        const time = Date.now() - start;
+
+        const data = await res.json();
+
+        outputEl.innerText =
+          "Status: " + res.status +
+          " (" + time + "ms)\n\n" +
+          JSON.stringify(data, null, 2);
+
+        outputEl.style.color = res.ok ? "#22c55e" : "#ef4444";
+        outputEl.classList.remove("success", "error");
+        outputEl.classList.add(res.ok ? "success" : "error");
+      } catch (err) {
+        outputEl.innerText =
+          "Error: " + err.message;
+        outputEl.style.color = "#ef4444";
+        outputEl.classList.remove("success");
+        outputEl.classList.add("error");
+      } finally {
+        btn.innerText = "Send Request";
+        btn.disabled = false;
+      }
+    }
+
+    function switchTab(type, el) {
+      document.getElementById("smsTab").style.display = type === "sms" ? "block" : "none";
+      document.getElementById("emailTab").style.display = type === "email" ? "block" : "none";
+
+      document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+      el.classList.add("active");
+
+      const indicator = document.querySelector(".tab-indicator");
+      indicator.style.width = el.offsetWidth + "px";
+      indicator.style.left = el.offsetLeft + "px";
+    }
+
+    window.onload = () => {
+      const activeTab = document.querySelector(".tab.active");
+      const indicator = document.querySelector(".tab-indicator");
+
+      indicator.style.width = activeTab.offsetWidth + "px";
+      indicator.style.left = activeTab.offsetLeft + "px";
+    };
+  </script>
 </body>
 </html>

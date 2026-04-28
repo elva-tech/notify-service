@@ -1,19 +1,21 @@
 const { allowedApps } = require('../config/allowedApps');
 const { normalizeAppId } = require('../utils/appId');
 
-function unauthorized(res, message) {
+function unauthorized(req, res, message) {
   return res.status(401).json({
     success: false,
     error: 'unauthorized',
     message,
+    requestId: req.requestId,
   });
 }
 
-function forbidden(res) {
+function forbidden(req, res) {
   return res.status(403).json({
     success: false,
     error: 'forbidden',
     message: 'Invalid app credentials',
+    requestId: req.requestId,
   });
 }
 
@@ -26,39 +28,39 @@ function validateAppApiKey(req, res, next) {
   const apiKey = body?.apiKey;
 
   if (appId === undefined || appId === null) {
-    return unauthorized(res, 'appId is required');
+    return unauthorized(req, res, 'appId is required');
   }
   if (typeof appId !== 'string') {
-    return unauthorized(res, 'appId is required');
+    return unauthorized(req, res, 'appId is required');
   }
   if (!appId.trim()) {
-    return unauthorized(res, 'appId is required');
+    return unauthorized(req, res, 'appId is required');
   }
 
   if (apiKey === undefined || apiKey === null) {
-    return unauthorized(res, 'API key is required');
+    return unauthorized(req, res, 'API key is required');
   }
   if (typeof apiKey !== 'string') {
-    return unauthorized(res, 'API key is required');
+    return unauthorized(req, res, 'API key is required');
   }
   if (!apiKey.trim()) {
-    return unauthorized(res, 'API key is required');
+    return unauthorized(req, res, 'API key is required');
   }
 
   let normalizedAppId;
   try {
     normalizedAppId = normalizeAppId(appId);
   } catch {
-    return forbidden(res);
+    return forbidden(req, res);
   }
 
   const expected = allowedApps[normalizedAppId];
   if (expected === undefined) {
-    return forbidden(res);
+    return forbidden(req, res);
   }
 
   if (expected !== apiKey.trim()) {
-    return forbidden(res);
+    return forbidden(req, res);
   }
 
   next();

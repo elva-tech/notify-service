@@ -20,6 +20,15 @@ async function sendOTP(phone, otp, appId) {
   return fast2sms.sendSMS(normalized, message);
 }
 
+async function sendMessage(phone, message) {
+  const normalized = normalizePhone(phone);
+  if (typeof message !== 'string' || !message.trim()) {
+    throw new Error('SMS message is required');
+  }
+  return fast2sms.sendSMS(normalized, message.trim());
+}
+
 module.exports = {
   sendOTP,
+  sendMessage,
 };
