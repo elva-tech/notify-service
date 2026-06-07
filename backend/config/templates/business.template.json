@@ -1,0 +1,12 @@
+{
+  "_documentation": "Canonical business.json template for ELVA Notify onboarding. Copy to backend/config/businesses/<businessId>/business.json. businessId must match the folder name.",
+  "_requiredFields": ["businessId", "displayName", "version", "dlt"],
+  "businessId": "workspace",
+  "displayName": "Workspace",
+  "version": "v1",
+  "dlt": {
+    "_documentation": "India DLT registration metadata. Replace placeholders before production.",
+    "entityId": "REPLACE_WITH_DLT_ENTITY_ID",
+    "defaultSenderId": "REPLACE"
+  }
+}

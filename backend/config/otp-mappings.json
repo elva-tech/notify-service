@@ -1,0 +1,14 @@
+{
+  "eNandi": {
+    "business": "enandi",
+    "templateKey": "LOGIN_OTP",
+    "dltEnabled": true,
+    "legacyRouteEnabled": false
+  },
+  "CMS": {
+    "business": "enandi",
+    "templateKey": "LOGIN_OTP",
+    "dltEnabled": true,
+    "legacyRouteEnabled": true
+  }
+}

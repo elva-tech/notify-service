@@ -1,0 +1,149 @@
+{
+  "templates": [
+    {
+      "templateKey": "LOGIN_OTP",
+      "purpose": "Send OTP for user login.",
+      "templateId": "1207177979441360359",
+      "messageId": "216423",
+      "variables": [
+        {
+          "name": "businessName",
+          "position": 1,
+          "type": "string",
+          "required": true,
+          "maxLength": 30
+        },
+        {
+          "name": "otp",
+          "position": 2,
+          "type": "numeric",
+          "required": true,
+          "length": 6,
+          "digitsOnly": true
+        }
+      ]
+    },
+    {
+      "templateKey": "LOGIN_OTP_WITH_ID",
+      "purpose": "Send OTP for user login with an additional identity field.",
+      "templateId": "1207177979905330405",
+      "messageId": "216426",
+      "variables": [
+        {
+          "name": "businessName",
+          "position": 1,
+          "type": "string",
+          "required": true,
+          "maxLength": 30
+        },
+        {
+          "name": "loginId",
+          "position": 2,
+          "type": "string",
+          "required": true,
+          "maxLength": 30,
+          "pattern": "^[A-Za-z0-9_-]{1,30}$"
+        },
+        {
+          "name": "otp",
+          "position": 3,
+          "type": "numeric",
+          "required": true,
+          "length": 6,
+          "digitsOnly": true
+        }
+      ]
+    },
+    {
+      "templateKey": "ORDER_PLACED",
+      "purpose": "Notify user that an order has been placed.",
+      "templateId": "1207177979197056177",
+      "messageId": "216424",
+      "variables": [
+        {
+          "name": "customerName",
+          "position": 1,
+          "type": "string",
+          "required": true,
+          "maxLength": 40
+        },
+        {
+          "name": "businessName",
+          "position": 2,
+          "type": "string",
+          "required": true,
+          "maxLength": 30
+        },
+        {
+          "name": "orderId",
+          "position": 3,
+          "type": "string",
+          "required": true,
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_-]{1,40}$"
+        }
+      ]
+    },
+    {
+      "templateKey": "ORDER_DELIVERED",
+      "purpose": "Notify user that an order has been delivered.",
+      "templateId": "1207177979979637116",
+      "messageId": "216425",
+      "variables": [
+        {
+          "name": "customerName",
+          "position": 1,
+          "type": "string",
+          "required": true,
+          "maxLength": 40
+        },
+        {
+          "name": "orderId",
+          "position": 2,
+          "type": "string",
+          "required": true,
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_-]{1,40}$"
+        },
+        {
+          "name": "businessName",
+          "position": 3,
+          "type": "string",
+          "required": true,
+          "maxLength": 30
+        }
+      ]
+    },
+    {
+      "templateKey": "OUT_FOR_DELIVERY",
+      "purpose": "Notify user that an order is out for delivery.",
+      "templateId": "1207177987065122467",
+      "messageId": "216427",
+      "variables": [
+        {
+          "name": "customerName",
+          "position": 1,
+          "type": "string",
+          "required": true,
+          "maxLength": 40
+        },
+        {
+          "name": "orderId",
+          "position": 2,
+          "type": "string",
+          "required": true,
+          "maxLength": 40,
+          "pattern": "^[A-Za-z0-9_-]{1,40}$"
+        },
+        {
+          "name": "businessName",
+          "position": 3,
+          "type": "string",
+          "required": true,
+          "maxLength": 30
+        }
+      ]
+    }
+  ]
+}
+

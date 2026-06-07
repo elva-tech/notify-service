@@ -1,0 +1,267 @@
+AppCredentials:
+  type: object
+  required:
+    - appId
+    - apiKey
+  properties:
+    appId:
+      type: string
+      description: Application identifier registered in APP_CREDENTIALS_JSON
+    apiKey:
+      type: string
+      description: API secret paired with appId
+
+HealthResponse:
+  type: object
+  required:
+    - status
+    - service
+    - timestamp
+    - requestId
+  properties:
+    status:
+      type: string
+      enum: [ok]
+    service:
+      type: string
+      enum: [elva-otp-service]
+    timestamp:
+      type: string
+      format: date-time
+    requestId:
+      type: string
+      format: uuid
+
+OtpSendSmsRequest:
+  allOf:
+    - $ref: '#/AppCredentials'
+    - type: object
+      required:
+        - phone
+      properties:
+        phone:
+          type: string
+          description: Phone number (normalized to digits)
+        channel:
+          type: string
+          enum: [SMS]
+          default: SMS
+
+OtpSendEmailRequest:
+  allOf:
+    - $ref: '#/AppCredentials'
+    - type: object
+      required:
+        - channel
+        - email
+      properties:
+        channel:
+          type: string
+          enum: [EMAIL]
+        email:
+          type: string
+          format: email
+
+OtpSendSuccess:
+  type: object
+  required:
+    - success
+    - message
+    - expiresIn
+    - requestId
+  properties:
+    success:
+      type: boolean
+      enum: [true]
+    message:
+      type: string
+      example: OTP sent successfully
+    expiresIn:
+      type: integer
+      description: Seconds until OTP expires (300 = 5 minutes)
+      example: 300
+    requestId:
+      type: string
+      format: uuid
+
+OtpVerifySmsRequest:
+  allOf:
+    - $ref: '#/AppCredentials'
+    - type: object
+      required:
+        - phone
+        - otp
+      properties:
+        phone:
+          type: string
+        otp:
+          type: string
+          pattern: '^[0-9]{6}$'
+          description: Six-digit OTP code
+
+OtpVerifyEmailRequest:
+  allOf:
+    - $ref: '#/AppCredentials'
+    - type: object
+      required:
+        - email
+        - otp
+      properties:
+        email:
+          type: string
+          format: email
+        otp:
+          type: string
+          pattern: '^[0-9]{6}$'
+
+OtpVerifySuccess:
+  type: object
+  required:
+    - success
+    - message
+    - requestId
+  properties:
+    success:
+      type: boolean
+      enum: [true]
+    message:
+      type: string
+      example: OTP verified successfully
+    requestId:
+      type: string
+      format: uuid
+
+NotifyLegacySmsRequest:
+  allOf:
+    - $ref: '#/AppCredentials'
+    - type: object
+      required:
+        - channel
+        - to
+        - message
+      properties:
+        channel:
+          type: string
+          enum: [SMS]
+        to:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          description: Recipient phone numbers
+        message:
+          type: string
+          description: Free-text SMS body (Fast2SMS route q)
+
+NotifyDltSmsRequest:
+  allOf:
+    - $ref: '#/AppCredentials'
+    - type: object
+      required:
+        - channel
+        - to
+        - templateKey
+        - variables
+      properties:
+        channel:
+          type: string
+          enum: [SMS]
+        to:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        business:
+          type: string
+          deprecated: true
+          example: enandi
+          description: Deprecated — use appId instead. When provided, must match appId.
+        templateKey:
+          type: string
+          example: ORDER_PLACED
+          description: DLT template key from the business catalog for your appId
+        variables:
+          type: object
+          additionalProperties: true
+          description: |
+            Template variable values keyed by name (order in JSON does not matter; DLT pipe order follows template schema).
+
+            **Do not use for OTP templates.** Templates containing an `otp` variable (`LOGIN_OTP`, `LOGIN_OTP_WITH_ID`)
+            are rejected with `otp_template_not_supported`. Use POST /otp/send instead.
+
+NotifyEmailHtmlRequest:
+  allOf:
+    - $ref: '#/AppCredentials'
+    - type: object
+      required:
+        - channel
+        - to
+        - subject
+        - html
+      properties:
+        channel:
+          type: string
+          enum: [EMAIL]
+        to:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: email
+        subject:
+          type: string
+        html:
+          type: string
+          description: HTML email body
+
+NotifyEmailTemplateRequest:
+  allOf:
+    - $ref: '#/AppCredentials'
+    - type: object
+      required:
+        - channel
+        - to
+        - subject
+        - template
+      properties:
+        channel:
+          type: string
+          enum: [EMAIL]
+        to:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: email
+        subject:
+          type: string
+        template:
+          type: string
+          example: basic
+        data:
+          type: object
+          additionalProperties: true
+
+NotifySuccess:
+  type: object
+  required:
+    - success
+    - message
+    - channel
+    - requestId
+  properties:
+    success:
+      type: boolean
+      enum: [true]
+    message:
+      type: string
+      example: Notification sent
+    channel:
+      type: string
+      enum: [SMS, EMAIL]
+    templateKey:
+      type: string
+      description: Present on DLT template SMS success only
+    requestId:
+      type: string
+      format: uuid

@@ -1,0 +1,388 @@
+﻿{"level":"info","event":"otp_generated","category":"OTP","requestId":null,"business":null,"templateKey":null,"channel":"SMS","recipient":"918660397320","status":"completed","provider":null,"templateId":null,"businessVersion":"v1","timestamp":"2026-06-06T18:08:20.888Z","appId":"eNandi"}
+{
+  "baseUrl": "http://localhost:4000",
+  "timestamp": "2026-06-06T18:08:12.370Z",
+  "scenarios": {
+    "scenario1_send": {
+      "request": {
+        "path": "/otp/send",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "appId": "eNandi",
+          "apiKey": "eNandi_123",
+          "phone": "918660397320"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json; charset=utf-8",
+          "x-ratelimit-limit": null,
+          "x-ratelimit-remaining": null
+        },
+        "body": {
+          "success": true,
+          "message": "OTP sent successfully",
+          "expiresIn": 300,
+          "requestId": "231d3d4a-ec99-435b-b56b-34c8d29078f2"
+        }
+      },
+      "redis": {
+        "otpRecord": {
+          "key": "otp:eNandi:918660397320",
+          "hash": {
+            "hash": "7660589d15ef4295659c559a48b649b6830c156541f5a91851237beac396b65b",
+            "salt": "42e21ad48505983d723de2df52605c93",
+            "attempts": "0"
+          },
+          "stringValue": "WRONGTYPE Operation against a key holding the wrong kind of value",
+          "ttl": "298"
+        },
+        "cooldown": {
+          "key": "otp:cooldown:eNandi:918660397320",
+          "hash": {},
+          "stringValue": "1",
+          "ttl": "29"
+        },
+        "rateLimits": {
+          "otp:rate:918660397320:minute": {
+            "hash": {},
+            "stringValue": "1",
+            "ttl": "57"
+          },
+          "otp:rate:918660397320:hour": {
+            "hash": {},
+            "stringValue": "1",
+            "ttl": "3597"
+          }
+        },
+        "matchingKeys": [
+          "otp:rate:918660397320:minute",
+          "otp:eNandi:918660397320",
+          "otp:cooldown:eNandi:918660397320",
+          "otp:rate:918660397320:hour"
+        ]
+      },
+      "expectedLogs": [
+        "otp_generated",
+        "otp_notification_dispatch",
+        "dlt_payload_ready",
+        "otp_dlt_dispatch",
+        "fast2sms_request_prepared",
+        "provider_response",
+        "otp_notification_sent",
+        "otp_delivery_completed"
+      ]
+    },
+    "scenario3_verify_failure": {
+      "attempts": [
+        {
+          "request": {
+            "path": "/otp/verify",
+            "body": {
+              "appId": "eNandi",
+              "apiKey": "eNandi_123",
+              "phone": "918660397320",
+              "otp": "111111"
+            }
+          },
+          "response": {
+            "status": 401,
+            "headers": {
+              "content-type": "application/json; charset=utf-8",
+              "x-ratelimit-limit": null,
+              "x-ratelimit-remaining": null
+            },
+            "body": {
+              "success": false,
+              "error": "mismatch",
+              "message": "Invalid OTP",
+              "requestId": "7044de45-cabc-4dfa-960f-ac6ef28fe8be"
+            }
+          },
+          "redisAfter": {
+            "key": "otp:eNandi:918660397320",
+            "hash": {
+              "hash": "7660589d15ef4295659c559a48b649b6830c156541f5a91851237beac396b65b",
+              "salt": "42e21ad48505983d723de2df52605c93",
+              "attempts": "1"
+            },
+            "ttl": "296"
+          }
+        },
+        {
+          "request": {
+            "path": "/otp/verify",
+            "body": {
+              "appId": "eNandi",
+              "apiKey": "eNandi_123",
+              "phone": "918660397320",
+              "otp": "222222"
+            }
+          },
+          "response": {
+            "status": 401,
+            "headers": {
+              "content-type": "application/json; charset=utf-8",
+              "x-ratelimit-limit": null,
+              "x-ratelimit-remaining": null
+            },
+            "body": {
+              "success": false,
+              "error": "mismatch",
+              "message": "Invalid OTP",
+              "requestId": "ea32cb3c-94b6-4f2b-878c-d918eed5360a"
+            }
+          },
+          "redisAfter": {
+            "key": "otp:eNandi:918660397320",
+            "hash": {
+              "hash": "7660589d15ef4295659c559a48b649b6830c156541f5a91851237beac396b65b",
+              "salt": "42e21ad48505983d723de2df52605c93",
+              "attempts": "2"
+            },
+            "ttl": "296"
+          }
+        },
+        {
+          "request": {
+            "path": "/otp/verify",
+            "body": {
+              "appId": "eNandi",
+              "apiKey": "eNandi_123",
+              "phone": "918660397320",
+              "otp": "333333"
+            }
+          },
+          "response": {
+            "status": 429,
+            "headers": {
+              "content-type": "application/json; charset=utf-8",
+              "x-ratelimit-limit": null,
+              "x-ratelimit-remaining": null
+            },
+            "body": {
+              "success": false,
+              "error": "max_attempts",
+              "message": "Too many failed attempts. Request a new code.",
+              "requestId": "5e685b90-f409-42e4-bf75-421ee30e2bb7"
+            }
+          },
+          "redisAfter": {
+            "key": "otp:eNandi:918660397320",
+            "hash": null,
+            "ttl": "-2"
+          }
+        }
+      ],
+      "redisFinal": {
+        "key": "otp:eNandi:918660397320",
+        "hash": null,
+        "note": "Key deleted after 3rd failed attempt (max_attempts)"
+      }
+    },
+    "scenario2_verify_success": {
+      "otpCaptureMethod": "internal generateOTP (API does not return OTP; log buffer unavailable from separate runner)",
+      "note": "External apps receive OTP via SMS only",
+      "sendBeforeVerify": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json; charset=utf-8",
+          "x-ratelimit-limit": null,
+          "x-ratelimit-remaining": null
+        },
+        "body": {
+          "success": true,
+          "message": "OTP sent successfully",
+          "expiresIn": 300,
+          "requestId": "9db63186-a6fe-4a93-85ce-53b609ce9d5f"
+        }
+      },
+      "redisBeforeVerify": {
+        "key": "otp:eNandi:918660397320",
+        "hash": {
+          "hash": "99f6cc818828ec7dc02ada2214796007accddd2e1fc0acf23eb1bd56e5f18e1d",
+          "salt": "72b614cac96c347ad13eee4c994d3bf9",
+          "attempts": "0"
+        },
+        "ttl": "300"
+      },
+      "verifyRequest": {
+        "path": "/otp/verify",
+        "body": {
+          "appId": "eNandi",
+          "apiKey": "eNandi_123",
+          "phone": "918660397320",
+          "otp": "405237"
+        }
+      },
+      "verifyResponse": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json; charset=utf-8",
+          "x-ratelimit-limit": null,
+          "x-ratelimit-remaining": null
+        },
+        "body": {
+          "success": true,
+          "message": "OTP verified successfully",
+          "requestId": "82eb3f64-c575-4b65-bffd-dc3807132d77"
+        }
+      },
+      "redisAfterVerify": {
+        "key": "otp:eNandi:918660397320",
+        "hash": null,
+        "ttl": "-2"
+      }
+    },
+    "scenario4_resend": {
+      "redisBeforeResend": {
+        "key": "otp:eNandi:918660397320",
+        "hash": {
+          "hash": "1552d52860c3fc8f2322eb601b36100240cc6ecade7b6cf1575cc2a7e1144466",
+          "salt": "2faeae766067c1e0ef1ee1e33f6da004",
+          "attempts": "0"
+        }
+      },
+      "resendWhileCooldownActive": {
+        "status": 429,
+        "headers": {
+          "content-type": "application/json; charset=utf-8",
+          "x-ratelimit-limit": null,
+          "x-ratelimit-remaining": null
+        },
+        "body": {
+          "success": false,
+          "error": "cooldown_active",
+          "message": "Please wait before requesting another OTP",
+          "requestId": "d4c46b10-1883-450a-a316-976827722fc1"
+        }
+      },
+      "resendAfterCooldownCleared": {
+        "status": 429,
+        "headers": {
+          "content-type": "application/json; charset=utf-8",
+          "x-ratelimit-limit": null,
+          "x-ratelimit-remaining": null
+        },
+        "body": {
+          "success": false,
+          "error": "rate_limited",
+          "message": "Too many OTP requests. Try later.",
+          "requestId": "eef26639-d325-4b4a-97c6-87c744956593"
+        }
+      },
+      "redisAfterResend": {
+        "key": "otp:eNandi:918660397320",
+        "hash": {
+          "hash": "1552d52860c3fc8f2322eb601b36100240cc6ecade7b6cf1575cc2a7e1144466",
+          "salt": "2faeae766067c1e0ef1ee1e33f6da004",
+          "attempts": "0"
+        },
+        "hashChanged": false
+      },
+      "cooldownAfterSuccessfulResend": {
+        "hash": null,
+        "stringValue": "",
+        "ttl": "-2"
+      }
+    },
+    "scenario5_email": {
+      "request": {
+        "path": "/otp/send",
+        "body": {
+          "appId": "eNandi",
+          "apiKey": "eNandi_123",
+          "channel": "EMAIL",
+          "email": "arun.pn@elvatech.in"
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json; charset=utf-8",
+          "x-ratelimit-limit": null,
+          "x-ratelimit-remaining": null
+        },
+        "body": {
+          "success": true,
+          "message": "OTP sent successfully",
+          "expiresIn": 300,
+          "requestId": "eb721f2a-69eb-48bb-b168-d71cda31b075"
+        }
+      },
+      "redis": {
+        "key": "otp:eNandi:arun.pn@elvatech.in",
+        "hash": {
+          "hash": "8c54d408824326cba913c7f74d561b08947f9af5aaa2f04accbf65aa811beee6",
+          "salt": "c4ff8e88fed40e3cd9ea2ae3a242ae18",
+          "attempts": "0"
+        },
+        "ttl": "298"
+      },
+      "emailCooldownKeys": [
+        "otp:eNandi:arun.pn@elvatech.in"
+      ],
+      "verifyWrong": {
+        "status": 429,
+        "headers": {
+          "content-type": "application/json; charset=utf-8",
+          "x-ratelimit-limit": null,
+          "x-ratelimit-remaining": null
+        },
+        "body": {
+          "success": false,
+          "error": "rate_limited",
+          "message": "Too many requests. Please try again later.",
+          "requestId": "d992d023-5d2f-411e-875d-fde5d1acd169"
+        }
+      }
+    }
+  },
+  "authTests": {
+    "missingApiKey": {
+      "status": 429,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "x-ratelimit-limit": null,
+        "x-ratelimit-remaining": null
+      },
+      "body": {
+        "success": false,
+        "error": "rate_limited",
+        "message": "Too many requests. Please try again later.",
+        "requestId": "fee0c920-2056-49f0-a3cd-8d699fe1e3e7"
+      }
+    },
+    "wrongApiKey": {
+      "status": 429,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "x-ratelimit-limit": null,
+        "x-ratelimit-remaining": null
+      },
+      "body": {
+        "success": false,
+        "error": "rate_limited",
+        "message": "Too many requests. Please try again later.",
+        "requestId": "81bc1d1f-6e55-4867-a259-6ce693691b41"
+      }
+    },
+    "unknownApp": {
+      "status": 403,
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "x-ratelimit-limit": null,
+        "x-ratelimit-remaining": null
+      },
+      "body": {
+        "success": false,
+        "error": "forbidden",
+        "message": "Invalid app credentials",
+        "requestId": "ab67749b-e03e-40bf-bc25-fa3ca09929f5"
+      }
+    }
+  }
+}

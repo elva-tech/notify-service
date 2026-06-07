@@ -1,0 +1,18 @@
+---
+description: Do not bind port 4000 when running backend smoke tests or scripts
+globs: backend/**/*
+alwaysApply: false
+---
+
+# Backend dev port (4000)
+
+The user's backend dev server runs on port 4000 via `npm run dev` in `backend/`.
+
+When running smoke tests or one-off scripts:
+
+- **Never** call `listen(4000)` or spawn a second `src/server.js` on port 4000.
+- Use `http://127.0.0.1:4000` only as an HTTP **client** against the already-running dev server.
+- For isolated server tests, use a random/ephemeral port (`listen(0)`) or port **4001+**.
+- Prefer `node backend/scripts/*.js` that call provider functions directly (no HTTP server) when possible.
+
+The backend implements graceful shutdown on SIGTERM/SIGINT so `node --watch` can release port 4000 on restart.
