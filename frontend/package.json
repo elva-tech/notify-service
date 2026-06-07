@@ -10,7 +10,7 @@
     "dev:webpack": "next dev -p 3000",
     "dev:clean": "npm run clean && npm run dev",
     "dev:reset": "node scripts/reset-dev.mjs",
-    "prebuild": "node scripts/generate-manifest.mjs && node scripts/generate-openapi-manifest.mjs && node ../backend/scripts/generate-otp-health-snapshot.mjs && node ../backend/scripts/generate-business-health-snapshot.mjs",
+    "prebuild": "node scripts/generate-manifest.mjs && node scripts/generate-openapi-manifest.mjs",
     "build": "next build",
     "build:standalone": "node scripts/build-standalone.mjs",
     "start": "next start -p 3000",
@@ -31,7 +31,7 @@
     "lucide-react": "^0.475.0",
     "mermaid": "^11.4.1",
     "next": "^15.1.6",
-    "next-mdx-remote": "^5.0.0",
+    "next-mdx-remote": "^6.0.0",
     "next-themes": "^0.4.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -45,6 +45,7 @@
     "unified": "^11.0.5"
   },
   "devDependencies": {
+    "@apidevtools/swagger-parser": "^10.1.1",
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^22.10.7",
     "@types/react": "^19.0.7",
@@ -54,7 +55,6 @@
     "eslint-config-next": "^15.1.6",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.3",
-    "@apidevtools/swagger-parser": "^10.1.1"
+    "typescript": "^5.7.3"
   }
 }
