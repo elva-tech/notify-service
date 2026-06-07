@@ -10,7 +10,7 @@
     "dev:webpack": "next dev -p 3000",
     "dev:clean": "npm run clean && npm run dev",
     "dev:reset": "node scripts/reset-dev.mjs",
-    "prebuild": "node scripts/generate-manifest.mjs && node scripts/generate-openapi-manifest.mjs && node ../backend/scripts/generate-otp-health-snapshot.mjs && node ../backend/scripts/generate-business-health-snapshot.mjs",
+    "prebuild": "node scripts/generate-manifest.mjs && node scripts/generate-openapi-manifest.mjs",
     "build": "next build",
     "build:standalone": "node scripts/build-standalone.mjs",
     "start": "next start -p 3000",
