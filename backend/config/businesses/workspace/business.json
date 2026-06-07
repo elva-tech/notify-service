@@ -1,0 +1,9 @@
+{
+  "businessId": "workspace",
+  "displayName": "Workspace",
+  "version": "v1",
+  "dlt": {
+    "entityId": "REPLACE_WITH_DLT_ENTITY_ID",
+    "defaultSenderId": "REPLACE"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "_documentation": "Optional OTP mapping entry for backend/config/otp-mappings.json. Key is the appId from APP_CREDENTIALS_JSON.",
+  "_requiredFields": ["business", "templateKey"],
+  "_example": {
+    "workspace-app": {
+      "business": "workspace",
+      "templateKey": "LOGIN_OTP",
+      "dltEnabled": false,
+      "legacyRouteEnabled": true
+    }
+  },
+  "workspace-app": {
+    "business": "workspace",
+    "templateKey": "LOGIN_OTP",
+    "dltEnabled": false,
+    "legacyRouteEnabled": true
+  }
+}

@@ -1,0 +1,16 @@
+# ELVA Notify authentication metadata (body-based credentials).
+# OpenAPI has no standard for apiKey-in-body; use x-elva-auth on operations instead.
+
+x-elva-auth-description: |
+  Protected endpoints require `appId` and `apiKey` in the JSON request body (not headers).
+  Credentials are validated against `APP_CREDENTIALS_JSON` on the server.
+
+  See narrative guide: /docs/api/authentication
+
+x-elva-auth-required:
+  description: Authentication required via appId and apiKey in request body
+  required: true
+
+x-elva-auth-none:
+  description: No authentication required
+  required: false

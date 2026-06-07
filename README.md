@@ -1,6 +1,14 @@
-# ELVA Notify Service
+# ELVA Notify Platform
 
-A small **Express** microservice that generates and verifies one-time passwords (OTP), stores them in **Redis** (hashed), delivers codes via **SMS** (Fast2SMS) and **EMAIL** (SendGrid), exposes a unified **Notification API** (`POST /notify`) for SMS/EMAIL sends, and isolates traffic per **application** using `appId` and API key authentication.
+Monorepo for the ELVA Notify platform:
+
+| Package | Path | Purpose |
+|---------|------|---------|
+| **Backend** | `backend/` | Express OTP + Notify API |
+| **Frontend** | `frontend/` | Documentation portal (Next.js) |
+| **Docs** | `docs/` | Markdown source of truth (API, architecture, testing, phase reports) |
+
+The **backend** generates and verifies one-time passwords (OTP), stores them in **Redis** (hashed), delivers codes via **SMS** (Fast2SMS) and **EMAIL** (SendGrid), exposes a unified **Notification API** (`POST /notify`), and isolates traffic per **application** using `appId` and API key authentication.
 
 ---
 
@@ -28,7 +36,7 @@ Credentials are defined at startup using the environment variable `APP_CREDENTIA
 
 ## Endpoints
 
-Base URL is your server origin (e.g. `http://localhost:3000`). All OTP routes expect `Content-Type: application/json`.
+Base URL is your server origin (e.g. `http://localhost:4000` for local backend). All OTP routes expect `Content-Type: application/json`.
 
 ### 1. `POST /otp/send`
 
@@ -319,13 +327,48 @@ Applied only to **`POST /otp/send`** and **`POST /otp/resend`** (after API key c
 
 ---
 
+## Repository layout
+
+```
+.
+├── backend/          # Express API (src/, public/)
+├── frontend/         # Next.js documentation portal
+├── docs/             # Markdown documentation source
+└── package.json      # Root orchestrator scripts
+```
+
 ## Operations quick reference
 
-- **Runtime**: Node.js 18+
-- **Config**: copy `.env.example` to `.env` — set `REDIS_*`, `FAST2SMS_API_KEY`, `SENDGRID_API_KEY`, `EMAIL_FROM`, `APP_CREDENTIALS_JSON`, etc.
-- **Start**: `npm install` then `npm start` (or `npm run dev` with watch).
+- **Runtime**: Node.js 18+ (see `backend/.nvmrc` and `frontend/.nvmrc`)
+- **Backend config**: copy `backend/.env.example` to `backend/.env`
+- **Frontend config**: optional `frontend/.env` (see `frontend/.env.example`)
+- **No shared root `.env`** — each package has its own environment
 
-`GET /health` is available for load balancer or uptime checks (no authentication).
+| Command | Description |
+|---------|-------------|
+| `npm run backend:dev` | Start backend API (port **4000** via `backend/.env`) |
+| `npm run backend:start` | Production backend |
+| `npm run frontend:dev` | Start docs portal (port **3000**) |
+| `npm run dev` | Start backend + frontend together |
+| `npm run build` | Build frontend only |
+| `npm run otp:health` | Generate OTP DLT health snapshot |
+
+`GET /health` is available for load balancer or uptime checks (no authentication). When an OTP health snapshot exists, the response includes an additive `otpDlt` summary object.
+
+### OTP DLT observability (Phase 8C)
+
+| Resource | Description |
+|----------|-------------|
+| [/platform/otp](http://localhost:3000/platform/otp) | Rollout dashboard, config health, retirement gate |
+| `npm run otp:health` | Generate `backend/.generated/otp-health-snapshot.json` |
+| `docs/architecture/otp-dlt-observability.md` | SLIs, log taxonomy, aggregation guide |
+| `docs/runbooks/` | Outage, rollback, rollout, log triage, retirement readiness |
+
+Key log events: `otp_delivery_completed`, `otp_verify_outcome`, `otp_config_health`, `otp_dlt_fallback`.
+
+Phase implementation reports and audit artifacts are in [`docs/reports/`](docs/reports/). See [docs/README.md](docs/README.md) for the full documentation map.
+
+See [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md) for package-specific instructions.
 
 ---
 

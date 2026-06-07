@@ -1,0 +1,53 @@
+{
+  "_documentation": "Canonical templates.json template. Each template requires DLT-approved templateId and ordered variables.",
+  "_requiredFields": ["templates"],
+  "_validationExample": {
+    "templateKey": "LOGIN_OTP",
+    "purpose": "Send OTP for user login.",
+    "templateId": "REPLACE_WITH_DLT_TEMPLATE_ID_LOGIN",
+    "messageId": "REPLACE_WITH_FAST2SMS_MESSAGE_ID_LOGIN",
+    "variables": [
+      {
+        "name": "otp",
+        "position": 1,
+        "type": "numeric",
+        "required": true,
+        "length": 6,
+        "digitsOnly": true
+      }
+    ]
+  },
+  "templates": [
+    {
+      "templateKey": "LOGIN_OTP",
+      "purpose": "Send OTP for user login.",
+      "templateId": "REPLACE_WITH_DLT_TEMPLATE_ID_LOGIN",
+    "messageId": "REPLACE_WITH_FAST2SMS_MESSAGE_ID_LOGIN",
+      "variables": [
+        {
+          "name": "otp",
+          "position": 1,
+          "type": "numeric",
+          "required": true,
+          "length": 6,
+          "digitsOnly": true
+        }
+      ]
+    },
+    {
+      "templateKey": "WELCOME",
+      "purpose": "Welcome message for new users.",
+      "templateId": "REPLACE_WITH_DLT_TEMPLATE_ID_WELCOME",
+      "messageId": "REPLACE_WITH_FAST2SMS_MESSAGE_ID_WELCOME",
+      "variables": [
+        {
+          "name": "userName",
+          "position": 1,
+          "type": "string",
+          "required": true,
+          "maxLength": 30
+        }
+      ]
+    }
+  ]
+}

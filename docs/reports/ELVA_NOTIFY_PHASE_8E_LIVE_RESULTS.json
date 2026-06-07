@@ -1,0 +1,131 @@
+{
+  "notify": [
+    {
+      "templateKey": "ORDER_PLACED",
+      "variables": {
+        "orderId": "ORD-8E-001",
+        "orderDate": "2026-06-06"
+      },
+      "dltPayload": {
+        "senderId": "ELVATK",
+        "templateId": "1207177979197056177",
+        "entityId": "1201177860312735154",
+        "variablesValues": "ORD-8E-001|2026-06-06"
+      },
+      "fast2smsRequest": {
+        "route": "dlt",
+        "sender_id": "ELVATK",
+        "message": "1207177979197056177",
+        "variables_values": "ORD-8E-001|2026-06-06",
+        "entity_id": "1201177860312735154",
+        "numbers": ""
+      },
+      "providerResponse": null,
+      "ok": true,
+      "error": null,
+      "skipped": "dry-run or no phone"
+    },
+    {
+      "templateKey": "ORDER_DELIVERED",
+      "variables": {
+        "orderId": "ORD-8E-001",
+        "deliveryDateTime": "2026-06-06 14:30"
+      },
+      "dltPayload": {
+        "senderId": "ELVATK",
+        "templateId": "1207177979979637116",
+        "entityId": "1201177860312735154",
+        "variablesValues": "ORD-8E-001|2026-06-06 14:30"
+      },
+      "fast2smsRequest": {
+        "route": "dlt",
+        "sender_id": "ELVATK",
+        "message": "1207177979979637116",
+        "variables_values": "ORD-8E-001|2026-06-06 14:30",
+        "entity_id": "1201177860312735154",
+        "numbers": ""
+      },
+      "providerResponse": null,
+      "ok": true,
+      "error": null,
+      "skipped": "dry-run or no phone"
+    },
+    {
+      "templateKey": "OUT_FOR_DELIVERY",
+      "variables": {
+        "orderId": "ORD-8E-001",
+        "expectedDeliveryTime": "14:30"
+      },
+      "dltPayload": {
+        "senderId": "ELVATK",
+        "templateId": "1207177987065122467",
+        "entityId": "1201177860312735154",
+        "variablesValues": "ORD-8E-001|14:30"
+      },
+      "fast2smsRequest": {
+        "route": "dlt",
+        "sender_id": "ELVATK",
+        "message": "1207177987065122467",
+        "variables_values": "ORD-8E-001|14:30",
+        "entity_id": "1201177860312735154",
+        "numbers": ""
+      },
+      "providerResponse": null,
+      "ok": true,
+      "error": null,
+      "skipped": "dry-run or no phone"
+    }
+  ],
+  "otp": [
+    {
+      "templateKey": "LOGIN_OTP",
+      "sendPayload": {
+        "appId": "CMS",
+        "apiKey": "CMS_456",
+        "phone": ""
+      },
+      "send": {
+        "status": 400,
+        "body": {
+          "success": false,
+          "error": "validation_error",
+          "message": "phone cannot be empty",
+          "requestId": "7ea24b4c-3685-4bee-85fe-9d5ff855169f"
+        },
+        "ok": false
+      },
+      "verify": null
+    },
+    {
+      "templateKey": "LOGIN_OTP_WITH_ID",
+      "directDlt": {
+        "templateKey": "LOGIN_OTP_WITH_ID",
+        "variables": {
+          "otp": "482910",
+          "loginId": "user_8e"
+        },
+        "dltPayload": {
+          "senderId": "ELVATK",
+          "templateId": "1207177979905330405",
+          "entityId": "1201177860312735154",
+          "variablesValues": "482910|user_8e"
+        },
+        "fast2smsRequest": {
+          "route": "dlt",
+          "sender_id": "ELVATK",
+          "message": "1207177979905330405",
+          "variables_values": "482910|user_8e",
+          "entity_id": "1201177860312735154",
+          "numbers": ""
+        },
+        "providerResponse": null,
+        "ok": true,
+        "error": null,
+        "skipped": "dry-run or no phone"
+      }
+    }
+  ],
+  "startedAt": "2026-06-06T15:53:32.754Z",
+  "phone": "",
+  "dryRun": true
+}

@@ -1,0 +1,9 @@
+{
+  "businessId": "enandi",
+  "displayName": "eNandi",
+  "version": "v1",
+  "dlt": {
+    "entityId": "1201177860312735154",
+    "defaultSenderId": "ELVATK"
+  }
+}
