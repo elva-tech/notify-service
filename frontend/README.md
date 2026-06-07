@@ -75,11 +75,32 @@ npm run start
 
 Output mode: `standalone` (independent deploy). Not coupled to Express `public/`.
 
+## Vercel deployment
+
+In the Vercel project **Settings → General → Build & Development Settings**:
+
+| Setting | Value |
+|---------|--------|
+| **Root Directory** | `frontend` |
+| **Framework Preset** | Next.js |
+| **Build Command** | `npm run build` (default) |
+| **Output Directory** | *(leave empty — do not set `.next` or `out`)* |
+| **Install Command** | `npm install` (default) |
+
+**Environment variables:**
+
+| Variable | Production value |
+|----------|------------------|
+| `NEXT_PUBLIC_API_BASE_URL` | `https://api.notify.elvatech.in` |
+| `NEXT_PUBLIC_BASE_PATH` | *(empty unless mounting under a subpath)* |
+
+If the build succeeds but every URL returns Vercel `404: NOT_FOUND`, the usual cause is **Output Directory** set to `.next` instead of leaving it blank for the Next.js builder.
+
 ## Deployment targets
 
 | Target | Configuration |
 |--------|---------------|
-| `docs.notify.elvatech.in` | `NEXT_PUBLIC_BASE_PATH=` (empty) |
+| `notify.elvatech.in` | `NEXT_PUBLIC_BASE_PATH=` (empty) |
 | `notify.elvatech.in/docs` | Reverse proxy `/docs` → Next app; optional `NEXT_PUBLIC_BASE_PATH=/docs` if entire app is mounted under prefix |
 
 ## Scripts
