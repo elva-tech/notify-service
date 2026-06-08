@@ -3,6 +3,7 @@
  */
 
 const { getBusiness } = require('../../businesses');
+const { getOtpMappingEntry } = require('../otpDltResolver.service');
 
 function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
@@ -24,8 +25,9 @@ function hasLegacyMessage(body) {
 
 /**
  * Resolves the business module id for DLT template notify requests.
- * `appId` is the tenant identifier and matches the registered business id (e.g. "enandi").
- * The legacy `business` field is accepted when it matches `appId` but is not required.
+ * `appId` identifies the tenant. When it matches a registered business id (e.g. "enandi"),
+ * that module is used. Otherwise, `otp-mappings.json` is consulted (e.g. CMS → enandi).
+ * The legacy `business` field is accepted when it matches the resolved id but is not required.
  *
  * @param {object} body
  * @returns {{ businessId: string } | { error: string }}
@@ -45,11 +47,20 @@ function resolveNotifyBusinessId(body) {
     return { error: 'appId is required for DLT template SMS' };
   }
 
-  if (!getBusiness(candidate)) {
-    return { error: `Unsupported business: ${candidate}` };
+  if (getBusiness(candidate)) {
+    return { businessId: candidate };
   }
 
-  return { businessId: candidate };
+  if (appId) {
+    const mapping = getOtpMappingEntry(appId);
+    const mappedBusiness =
+      typeof mapping?.business === 'string' ? mapping.business.trim().toLowerCase() : null;
+    if (mappedBusiness && getBusiness(mappedBusiness)) {
+      return { businessId: mappedBusiness };
+    }
+  }
+
+  return { error: `Unsupported business: ${candidate}` };
 }
 
 /**

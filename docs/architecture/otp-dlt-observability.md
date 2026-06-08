@@ -27,7 +27,7 @@ flowchart TB
 
     subgraph Portal["Frontend (build-time)"]
         MANIFEST[business-manifest.json]
-        DASH[/platform/otp]
+        DASH["/platform/otp"]
     end
 
     LOGS --> COLLECT --> SLI --> ALERT

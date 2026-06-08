@@ -1,6 +1,6 @@
 const { readOtpHealthSnapshot } = require('../services/otpHealthSnapshot.service');
 
-function getHealth(req, res) {
+function buildHealthPayload(req) {
   const response = {
     status: 'ok',
     service: 'elva-otp-service',
@@ -23,7 +23,16 @@ function getHealth(req, res) {
     };
   }
 
-  res.status(200).json(response);
+  return response;
 }
 
-module.exports = { getHealth };
+function getHealth(req, res) {
+  res.status(200).json(buildHealthPayload(req));
+}
+
+/** Lightweight probe for Render / UptimeRobot (no response body). */
+function headHealth(req, res) {
+  res.status(200).end();
+}
+
+module.exports = { getHealth, headHealth, buildHealthPayload };
