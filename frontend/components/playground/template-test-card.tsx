@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Check, Copy, Loader2, Play, Zap } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Check, ChevronDown, Copy, Loader2, Play, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MethodBadge } from '@/components/api/method-badge';
 import type { BusinessTemplate, OtpMappingEntry } from '@/lib/business-config-types';
@@ -93,6 +93,13 @@ export function TemplateTestCard({
   const [result, setResult] = useState<TemplateExecutionResult>(idleResult);
   const [copied, setCopied] = useState<'payload' | 'curl' | null>(null);
   const [running, setRunning] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (highlighted) {
+      setExpanded(true);
+    }
+  }, [highlighted]);
 
   const displayResult = externalResult ?? result;
   const deliveryType = getDeliveryType(template);
@@ -264,9 +271,20 @@ export function TemplateTestCard({
       )}
     >
       <header className="border-b px-4 py-4 sm:px-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
+        <button
+          type="button"
+          className="flex w-full items-start justify-between gap-3 text-left"
+          onClick={() => setExpanded((value) => !value)}
+          aria-expanded={expanded}
+        >
+          <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
+              <ChevronDown
+                className={cn(
+                  'h-4 w-4 shrink-0 text-muted-foreground transition-transform',
+                  expanded && 'rotate-180',
+                )}
+              />
               <h3 className="font-mono text-base font-bold">{template.templateKey}</h3>
               <span
                 className={cn(
@@ -278,16 +296,27 @@ export function TemplateTestCard({
               >
                 {deliveryType}
               </span>
+              {displayResult.status === 'pass' ? (
+                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
+                  PASS
+                </span>
+              ) : null}
+              {displayResult.status === 'fail' ? (
+                <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold text-red-700 dark:text-red-300">
+                  FAIL
+                </span>
+              ) : null}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{template.purpose}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <MethodBadge method="POST" />
             <code className="font-mono text-xs">{apiPath}</code>
           </div>
-        </div>
+        </button>
       </header>
 
+      {expanded ? (
       <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-2">
         <div className="space-y-4">
           <MetadataPanel businessId={businessId} template={template} pipePreview={pipePreview} deliveryMode={deliveryModeLabel} />
@@ -316,6 +345,7 @@ export function TemplateTestCard({
         </div>
         <ExecutionResultPanel result={displayResult} liveMode={liveMode} />
       </div>
+      ) : null}
     </article>
   );
 }

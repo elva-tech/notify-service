@@ -32,6 +32,15 @@ export function sanitizeMermaidChart(chart: string): string {
       }
     }
 
+    // Node labels like DASH[/platform/otp] — leading slash without closing slash is invalid
+    // subroutine syntax ([/text/]). Quote as a plain label instead.
+    next = next.replace(/\b([A-Za-z][A-Za-z0-9_]*)\[(\/[^\]"]+)\]/g, (match, id, label) => {
+      if (label.endsWith('/')) {
+        return match;
+      }
+      return `${id}["${label}"]`;
+    });
+
     return next;
   });
 

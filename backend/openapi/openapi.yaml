@@ -55,6 +55,18 @@ paths:
       x-related-docs:
         - title: Error Codes
           href: /docs/api/error-codes
+    head:
+      operationId: headHealth
+      tags: [Health]
+      summary: Health check (HEAD)
+      description: |
+        Same availability as `GET /health` with no response body.
+        Suitable for Render health checks and UptimeRobot HEAD monitors.
+      x-elva-auth:
+        required: false
+      responses:
+        '200':
+          description: Service is healthy
 
   /otp/send:
     post:

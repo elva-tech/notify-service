@@ -18,7 +18,7 @@ flowchart LR
     A --> D[validate:businesses CLI]
     D --> E[PASS / WARN / FAIL]
     E --> F[business-health-snapshot.json]
-    F --> G[/platform/businesses]
+    F --> G["/platform/businesses"]
 ```
 
 **Startup validation** (unchanged): schema errors abort process.
