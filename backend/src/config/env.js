@@ -36,6 +36,12 @@ module.exports = {
   email: {
     from: process.env.EMAIL_FROM,
   },
+  integrations: {
+    adminNotifyEmail: process.env.ADMIN_NOTIFY_EMAIL?.trim() || null,
+    opsAdminToken: process.env.OPS_ADMIN_TOKEN?.trim() || null,
+    publicPlatformUrl: process.env.PLATFORM_PUBLIC_URL?.trim() || 'http://localhost:3000',
+    integrationAppId: process.env.INTEGRATION_APP_ID?.trim() || null,
+  },
   redis: {
     url: process.env.REDIS_URL || null,
     host: process.env.REDIS_HOST || '127.0.0.1',

@@ -3,7 +3,10 @@
 
 x-elva-auth-description: |
   Protected endpoints require `appId` and `apiKey` in the JSON request body (not headers).
-  Credentials are validated against `APP_CREDENTIALS_JSON` on the server.
+  The ELVA team issues these credentials after your onboarding request and templates are approved.
+
+  OTP and SMS notify calls also require an approved `brandId` (or `variables.businessName` on notify).
+  Request a brand at /onboard — credentials arrive in the approval email.
 
   See narrative guide: /docs/api/authentication
 

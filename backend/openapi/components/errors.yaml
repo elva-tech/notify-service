@@ -49,6 +49,42 @@ ForbiddenError:
     message: Invalid app credentials
     requestId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
 
+BrandIdRequiredError:
+  allOf:
+    - $ref: '#/ErrorResponse'
+  example:
+    success: false
+    error: brand_id_required
+    message: brandId is required
+    requestId: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+
+BrandNotApprovedError:
+  allOf:
+    - $ref: '#/ErrorResponse'
+  example:
+    success: false
+    error: brand_not_approved
+    message: Brand is not registered or not approved for API access
+    requestId: b2c3d4e5-f6a7-8901-bcde-f12345678901
+
+BrandSuspendedError:
+  allOf:
+    - $ref: '#/ErrorResponse'
+  example:
+    success: false
+    error: brand_suspended
+    message: Brand "cms" is suspended
+    requestId: c3d4e5f6-a7b8-9012-cdef-123456789012
+
+TemplateNotAllowedError:
+  allOf:
+    - $ref: '#/ErrorResponse'
+  example:
+    success: false
+    error: template_not_allowed
+    message: Template "ORDER_SHIPPED" is not enabled for brand "enandi"
+    requestId: d4e5f6a7-b8c9-0123-def0-234567890123
+
 ValidationError:
   allOf:
     - $ref: '#/ErrorResponse'

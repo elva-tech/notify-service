@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Check, ChevronDown, Copy, Loader2, Play, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MethodBadge } from '@/components/api/method-badge';
-import type { BusinessTemplate, OtpMappingEntry } from '@/lib/business-config-types';
+import type { BusinessTemplate } from '@/lib/business-config-types';
 import {
   buildFast2SmsPreview,
   buildResolvedVariableRows,
@@ -20,6 +20,7 @@ import {
   validateTemplateVariables,
   type Fast2SmsPreview,
 } from '@/lib/dlt-test-utils';
+import { resolveBrandDisplayName } from '@/lib/playground-brand-utils';
 import { cn } from '@/lib/utils';
 import type { TemplateExecutionResult } from '@/components/playground/template-test-card.types';
 import { maskDltPayloadVariables, parseApiFailureBody } from '@/components/playground/template-test-card.types';
@@ -29,12 +30,17 @@ interface TemplateTestCardProps {
   template: BusinessTemplate;
   appId: string;
   apiKey: string;
+  brandId: string;
   phone: string;
   baseUrl: string;
   liveMode: boolean;
   highlighted: boolean;
   variables: Record<string, string>;
-  otpMappings: OtpMappingEntry[];
+  brands: Array<{
+    brandId: string;
+    brandName?: string;
+    otpPolicy?: { dltEnabled?: boolean; legacyRouteEnabled?: boolean };
+  }>;
   globalDltEnabled: boolean;
   onVariablesChange: (variables: Record<string, string>) => void;
   externalResult?: TemplateExecutionResult;
@@ -78,12 +84,13 @@ export function TemplateTestCard({
   template,
   appId,
   apiKey,
+  brandId,
   phone,
   baseUrl,
   liveMode,
   highlighted,
   variables,
-  otpMappings,
+  brands,
   globalDltEnabled,
   onVariablesChange,
   externalResult,
@@ -105,11 +112,14 @@ export function TemplateTestCard({
   const deliveryType = getDeliveryType(template);
   const apiPath = getSuiteApiPath(template);
   const formVariables = getFormVariables(template);
-  const deliveryModeLabel = resolveDeliveryMode(appId, template, otpMappings, globalDltEnabled);
+  const deliveryModeLabel = resolveDeliveryMode(brandId, template, brands, globalDltEnabled);
+  const brandDisplayName = resolveBrandDisplayName(brands, brandId);
 
   const payload = useMemo(
-    () => buildSuiteRequestPayload(businessId, template, { appId, apiKey, phone, variables }),
-    [businessId, template, appId, apiKey, phone, variables],
+    () => buildSuiteRequestPayload(businessId, template, {
+      appId, apiKey, brandId, phone, variables, brandDisplayName,
+    }),
+    [businessId, template, appId, apiKey, brandId, phone, variables, brandDisplayName],
   );
 
   const payloadJson = useMemo(() => JSON.stringify(payload, null, 2), [payload]);

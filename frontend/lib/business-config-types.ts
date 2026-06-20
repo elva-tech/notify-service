@@ -84,6 +84,33 @@ export interface BusinessManifestStats {
   versionCount: number;
 }
 
+export interface BrandRegistryEntry {
+  brandId: string;
+  status: 'active' | 'suspended' | 'pending';
+  brandName: string;
+  businessModule: string;
+  templates: {
+    otp: string[];
+    notify: string[];
+  };
+  otpPolicy: {
+    templateKey: string;
+    dltEnabled: boolean;
+    legacyRouteEnabled: boolean;
+  };
+  approvedAt: string | null;
+  searchText: string;
+}
+
+export interface BrandRegistrySection {
+  generatedAt: string;
+  stats: {
+    brandCount: number;
+    activeCount: number;
+  };
+  brands: BrandRegistryEntry[];
+}
+
 export interface OtpMappingEntry {
   appId: string;
   businessId: string;
@@ -190,6 +217,7 @@ export interface BusinessManifest {
   generatedAt: string;
   stats: BusinessManifestStats;
   businesses: BusinessConfig[];
+  brands: BrandRegistrySection;
   otpMappings: OtpMappingsSection;
   otpHealth: OtpHealthSnapshot | null;
   businessHealth: BusinessHealthSnapshot | null;

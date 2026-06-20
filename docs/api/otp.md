@@ -4,7 +4,7 @@
 |---|---|
 | **Purpose** | Document the OTP endpoints: send, resend, and verify — including request/response formats, rate limits, and error handling. |
 | **Intended Audience** | Client developers integrating OTP flows for SMS or email verification. |
-| **Last Updated** | 2026-06-05 |
+| **Last Updated** | 2026-06-17 |
 | **Related Documents** | [Authentication](./authentication.md) · [Error Codes](./error-codes.md) · [Request Lifecycle](../architecture/request-lifecycle.md) · [Notify API](./notify.md) |
 
 ---
@@ -19,7 +19,7 @@ The OTP API provides a complete verification flow:
 
 OTP SMS delivery uses **layered DLT rollout** (Phase 8B):
 
-- When `OTP_DLT_ENABLED=true` and the app mapping has `dltEnabled: true`, SMS is sent via Fast2SMS `route=dlt` using the mapped DLT template (e.g. eNandi `LOGIN_OTP`).
+- When `OTP_DLT_ENABLED=true` and the app mapping has `dltEnabled: true`, SMS is sent via Fast2SMS `route=dlt` using the ApnaKart `LOGIN_OTP` template (scoped to your `brandId`).
 - Otherwise SMS uses Fast2SMS `route=q` with a fixed free-text message.
 
 API request/response contracts are **unchanged** regardless of delivery mode. EMAIL OTP is unaffected.
@@ -28,7 +28,7 @@ See [OTP DLT Migration](../architecture/otp-dlt-migration.md) for rollout and ro
 
 ### OTP templates — use OTP API only
 
-These eNandi catalog templates **must not** be sent via `POST /notify`:
+These ApnaKart catalog templates **must not** be sent via `POST /notify`:
 
 | Template | Endpoints |
 |----------|-----------|
@@ -45,9 +45,9 @@ All OTP endpoints require authentication. Send and resend have additional cooldo
 
 | Method | Path | Middleware chain |
 |--------|------|------------------|
-| `POST` | `/otp/send` | `validateAppApiKey` → `checkOtpSendCooldown` → `rateLimitOtpSend` |
+| `POST` | `/otp/send` | `validateAppApiKey` → `validateApprovedBrand` → `checkOtpSendCooldown` → `rateLimitOtpSend` |
 | `POST` | `/otp/resend` | Same as send |
-| `POST` | `/otp/verify` | `validateAppApiKey` only |
+| `POST` | `/otp/verify` | `validateAppApiKey` → `validateApprovedBrand` |
 
 ---
 
@@ -79,8 +79,9 @@ sequenceDiagram
 
 ```json
 {
-  "appId": "enandi-app",
-  "apiKey": "your-secret-key",
+  "appId": "ELVA_NOTIFY",
+  "apiKey": "shared-platform-api-key",
+  "brandId": "enandi",
   "phone": "919876543210"
 }
 ```
@@ -89,8 +90,9 @@ sequenceDiagram
 
 ```json
 {
-  "appId": "enandi-app",
-  "apiKey": "your-secret-key",
+  "appId": "ELVA_NOTIFY",
+  "apiKey": "shared-platform-api-key",
+  "brandId": "enandi",
   "channel": "EMAIL",
   "email": "user@example.com"
 }
@@ -98,12 +100,14 @@ sequenceDiagram
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `appId` | Yes | Application ID |
-| `apiKey` | Yes | API secret |
+| `appId` | Yes | ELVA-issued platform application ID (sent on approval) |
+| `apiKey` | Yes | ELVA-issued API key paired with your `appId` |
+| `brandId` | Yes | Approved tenant brand slug (e.g. `enandi`, `cms`). See `GET /platform/brands`. OTP is stored in Redis per `brandId` + recipient. |
 | `phone` | Yes (SMS) | Phone number; normalized to digits |
 | `email` | Yes (EMAIL) | Email address |
 | `channel` | No | `SMS` (default) or `EMAIL` |
-| `loginId` | No | Optional for `LOGIN_OTP_WITH_ID` OTP mapping — identity field in DLT template |
+| `loginId` | No | Optional for `LOGIN_OTP_WITH_ID` when enabled for the brand |
+| `businessName` | No | Optional override of registry `brandName` in DLT SMS text |
 
 > **Never use `/notify` for login OTP.** See [Notify API](./notify.md) for transactional templates only.
 
@@ -163,7 +167,7 @@ flowchart LR
     C --> E[Send SMS/EMAIL]
 ```
 
-Revokes any existing OTP for the same `appId` + recipient before generating a new code.
+Revokes any existing OTP for the same `brandId` + recipient before generating a new code.
 
 ### Request Body
 
@@ -204,8 +208,9 @@ sequenceDiagram
 
 ```json
 {
-  "appId": "enandi-app",
-  "apiKey": "your-secret-key",
+  "appId": "ELVA_NOTIFY",
+  "apiKey": "shared-platform-api-key",
+  "brandId": "enandi",
   "phone": "919876543210",
   "otp": "482910"
 }
@@ -215,8 +220,9 @@ sequenceDiagram
 
 ```json
 {
-  "appId": "enandi-app",
-  "apiKey": "your-secret-key",
+  "appId": "ELVA_NOTIFY",
+  "apiKey": "shared-platform-api-key",
+  "brandId": "enandi",
   "email": "user@example.com",
   "otp": "482910"
 }
@@ -224,8 +230,9 @@ sequenceDiagram
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `appId` | Yes | Application ID |
-| `apiKey` | Yes | API secret |
+| `appId` | Yes | ELVA-issued platform application ID (sent on approval) |
+| `apiKey` | Yes | ELVA-issued API key paired with your `appId` |
+| `brandId` | Yes | Same brand slug used in `POST /otp/send` |
 | `phone` or `email` | Yes (one) | Recipient used during send |
 | `otp` | Yes | Exactly 6 digits |
 
@@ -271,14 +278,14 @@ Example:
 | Global | Per `appId` | 10/min | `rate_limited` |
 | OTP send | Per normalized phone | 3/min | `rate_limited` |
 | OTP send | Per normalized phone | 10/hour | `rate_limited` |
-| Cooldown | Per `appId` + phone (SMS only) | After successful send | `cooldown_active` |
+| Cooldown | Per `brandId` + phone (SMS only) | After successful send | `cooldown_active` |
 | Verify attempts | Per OTP record | 3 max | `max_attempts` |
 
 Redis keys:
 
 - Rate: `otp:rate:{phone}:minute`, `otp:rate:{phone}:hour`
-- Cooldown: `otp:cooldown:{appId}:{phone}`
-- OTP: `otp:{appId}:{recipient}`
+- Cooldown: `otp:cooldown:{brandId}:{phone}`
+- OTP: `otp:{brandId}:{recipient}`
 
 ---
 
@@ -289,7 +296,7 @@ Redis keys:
 ```bash
 curl -X POST {{API_BASE_URL}}/otp/send \
   -H "Content-Type: application/json" \
-  -d '{"appId":"enandi-app","apiKey":"your-secret-key","phone":"919876543210"}'
+  -d '{"appId":"ELVA_NOTIFY","apiKey":"shared-platform-api-key","brandId":"enandi","phone":"919876543210"}'
 ```
 
 **Verify OTP:**
@@ -297,7 +304,7 @@ curl -X POST {{API_BASE_URL}}/otp/send \
 ```bash
 curl -X POST {{API_BASE_URL}}/otp/verify \
   -H "Content-Type: application/json" \
-  -d '{"appId":"enandi-app","apiKey":"your-secret-key","phone":"919876543210","otp":"482910"}'
+  -d '{"appId":"ELVA_NOTIFY","apiKey":"shared-platform-api-key","brandId":"enandi","phone":"919876543210","otp":"482910"}'
 ```
 
 ---

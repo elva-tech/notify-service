@@ -3,6 +3,7 @@ import type {
   BusinessConfig,
   BusinessManifest,
   BusinessTemplate,
+  BrandRegistrySection,
   OtpHealthSnapshot,
   OtpMappingsSection,
 } from './business-config-types';
@@ -82,18 +83,38 @@ export async function fetchPlatformTemplate(
   }
 }
 
+interface PlatformBrandsResponse {
+  success: boolean;
+  generatedAt: string;
+  stats: BrandRegistrySection['stats'];
+  brands: BrandRegistrySection['brands'];
+}
+
+export async function fetchPlatformBrands(): Promise<PlatformBrandsResponse> {
+  return fetchJson<PlatformBrandsResponse>('/platform/brands');
+}
+
 export async function fetchPlatformOtpMetadata(): Promise<PlatformOtpResponse> {
   return fetchJson<PlatformOtpResponse>('/platform/otp');
 }
 
 export async function fetchPlatformManifest(): Promise<BusinessManifest> {
-  const [businesses, otp] = await Promise.all([fetchPlatformBusinesses(), fetchPlatformOtpMetadata()]);
+  const [businesses, otp, brands] = await Promise.all([
+    fetchPlatformBusinesses(),
+    fetchPlatformOtpMetadata(),
+    fetchPlatformBrands(),
+  ]);
 
   return {
     generatedAt: businesses.generatedAt,
     stats: businesses.stats,
     businesses: businesses.businesses,
     businessHealth: businesses.businessHealth,
+    brands: {
+      generatedAt: brands.generatedAt,
+      stats: brands.stats,
+      brands: brands.brands,
+    },
     otpMappings: otp.otpMappings,
     otpHealth: otp.otpHealth,
   };

@@ -14,6 +14,7 @@ const manifestPath = path.join(frontendRoot, '.generated', 'docs-manifest.json')
 
 const NAV_ITEMS = [
   { title: 'Documentation Home', slug: '', file: 'README.md' },
+  { title: 'End-to-End Integration Guide', slug: 'getting-started/end-to-end-integration-guide', file: 'getting-started/end-to-end-integration-guide.md' },
   { title: 'Overview', slug: 'architecture/overview', file: 'architecture/overview.md' },
   { title: 'Request Lifecycle', slug: 'architecture/request-lifecycle', file: 'architecture/request-lifecycle.md' },
   { title: 'DLT Layer', slug: 'architecture/dlt-layer', file: 'architecture/dlt-layer.md' },
@@ -30,7 +31,7 @@ const NAV_ITEMS = [
   { title: 'Error Codes', slug: 'api/error-codes', file: 'api/error-codes.md' },
   { title: 'OpenAPI Specification', slug: 'api/openapi', file: 'api/openapi.md' },
   { title: 'API Reference', slug: 'api/reference', file: 'api/reference.md' },
-  { title: 'eNandi', slug: 'businesses/enandi', file: 'businesses/enandi.md' },
+  { title: 'ApnaKart Templates', slug: 'businesses/apnakart', file: 'businesses/apnakart.md' },
   { title: 'Business Onboarding Guide', slug: 'businesses/onboarding-guide', file: 'businesses/onboarding-guide.md' },
   { title: 'Business Configuration Reference', slug: 'businesses/configuration-reference', file: 'businesses/configuration-reference.md' },
   { title: 'Business Validation Rules', slug: 'businesses/validation-rules', file: 'businesses/validation-rules.md' },

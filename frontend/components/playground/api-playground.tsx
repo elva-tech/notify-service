@@ -1,11 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Activity, FlaskConical, KeyRound, Layers, Server } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { API_BASE_URL, getApiEnvironmentLabel } from '@/lib/config';
+import { docsHref } from '@/lib/paths';
 import { buildCurlCommand, PLAYGROUND_TABS } from '@/lib/playground-config';
+import { activePlaygroundBrands, resolveBrandDisplayName } from '@/lib/playground-brand-utils';
+import { fetchPlatformBrands } from '@/lib/platform-api';
 import { ApiEndpointTester, type RequestHistoryItem } from '@/components/playground/api-endpoint-tester';
 import { DltTestSuiteLoader } from '@/components/playground/dlt-test-suite-loader';
 import { LiveLogPanel } from '@/components/playground/live-log-panel';
@@ -20,14 +24,18 @@ const VIEW_KEY = 'elva-playground-view';
 type PlaygroundView = 'explorer' | 'dlt-suite';
 
 function loadCredentials() {
-  if (typeof window === 'undefined') return { appId: '', apiKey: '' };
+  if (typeof window === 'undefined') return { appId: '', apiKey: '', brandId: 'elva-sales' };
   try {
     const raw = localStorage.getItem(CREDENTIALS_KEY);
-    if (!raw) return { appId: '', apiKey: '' };
-    const parsed = JSON.parse(raw) as { appId?: string; apiKey?: string };
-    return { appId: parsed.appId ?? '', apiKey: parsed.apiKey ?? '' };
+    if (!raw) return { appId: '', apiKey: '', brandId: 'elva-sales' };
+    const parsed = JSON.parse(raw) as { appId?: string; apiKey?: string; brandId?: string };
+    return {
+      appId: parsed.appId ?? '',
+      apiKey: parsed.apiKey ?? '',
+      brandId: parsed.brandId ?? 'elva-sales',
+    };
   } catch {
-    return { appId: '', apiKey: '' };
+    return { appId: '', apiKey: '', brandId: 'elva-sales' };
   }
 }
 
@@ -44,6 +52,7 @@ export function ApiPlayground() {
   const [activeEndpointId, setActiveEndpointId] = useState(PLAYGROUND_TABS[0].sections[0].endpoints[0].id);
   const [appId, setAppId] = useState(() => loadCredentials().appId);
   const [apiKey, setApiKey] = useState(() => loadCredentials().apiKey);
+  const [brandId, setBrandId] = useState(() => loadCredentials().brandId);
   const [phone, setPhone] = useState(() => {
     if (typeof window === 'undefined') return '';
     return localStorage.getItem(PHONE_KEY) ?? '';
@@ -51,8 +60,21 @@ export function ApiPlayground() {
   const [credentialsReady, setCredentialsReady] = useState(false);
   const [history, setHistory] = useState<RequestHistoryItem[]>([]);
   const [logBusiness, setLogBusiness] = useState('');
+  const [registryBrands, setRegistryBrands] = useState<Array<{ brandId: string; brandName: string; status: string }>>([]);
   const suiteBusiness = searchParams.get('business') ?? '';
   const suiteSearch = searchParams.get('template') ?? searchParams.get('q') ?? '';
+
+  const activeBrands = useMemo(() => activePlaygroundBrands(registryBrands), [registryBrands]);
+  const selectedBrandName = useMemo(
+    () => resolveBrandDisplayName(registryBrands, brandId),
+    [registryBrands, brandId],
+  );
+
+  useEffect(() => {
+    fetchPlatformBrands()
+      .then((data) => setRegistryBrands(data.brands))
+      .catch(() => setRegistryBrands([]));
+  }, []);
 
   useEffect(() => {
     setCredentialsReady(true);
@@ -67,8 +89,8 @@ export function ApiPlayground() {
 
   useEffect(() => {
     if (!credentialsReady) return;
-    localStorage.setItem(CREDENTIALS_KEY, JSON.stringify({ appId, apiKey }));
-  }, [appId, apiKey, credentialsReady]);
+    localStorage.setItem(CREDENTIALS_KEY, JSON.stringify({ appId, apiKey, brandId }));
+  }, [appId, apiKey, brandId, credentialsReady]);
 
   useEffect(() => {
     if (!credentialsReady) return;
@@ -107,6 +129,18 @@ export function ApiPlayground() {
             </h1>
             <p className="mt-3 max-w-2xl text-muted-foreground">
               Send real OTP and notification requests — or run the DLT test suite for any registered template group.
+              OTP email/SMS branding uses your approved registry <strong>brandName</strong>, not <code>appId</code>.
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              New here?{' '}
+              <Link href={docsHref('getting-started/end-to-end-integration-guide')} className="text-primary hover:underline">
+                Read the end-to-end integration guide
+              </Link>
+              {' '}or{' '}
+              <Link href="/onboard" className="text-primary hover:underline">
+                request brand access
+              </Link>
+              .
             </p>
           </div>
           <div className="flex flex-col gap-2">
@@ -146,19 +180,19 @@ export function ApiPlayground() {
       </section>
 
       <section className="mb-6 rounded-xl border bg-card p-4 shadow-sm md:p-5">
-        <div className="mb-4 flex items-center gap-2">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
           <KeyRound className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold">Credentials</h2>
-          <span className="text-xs text-muted-foreground">Saved in this browser</span>
+          <span className="text-xs text-muted-foreground">Saved in this browser · issued by ELVA after /onboard approval</span>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="space-y-1.5">
             <span className="text-xs font-medium text-muted-foreground">appId</span>
             <input
               className="h-10 w-full rounded-md border bg-background px-3 font-mono text-sm outline-none ring-primary focus:ring-2"
               value={appId}
               onChange={(e) => setAppId(e.target.value)}
-              placeholder="my-app"
+              placeholder="ELVA_NOTIFY"
               spellCheck={false}
             />
           </label>
@@ -168,11 +202,41 @@ export function ApiPlayground() {
               className="h-10 w-full rounded-md border bg-background px-3 font-mono text-sm outline-none ring-primary focus:ring-2"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="your-secret-key"
+              placeholder="your-issued-api-key"
               type="password"
               spellCheck={false}
             />
           </label>
+          <label className="space-y-1.5">
+            <span className="text-xs font-medium text-muted-foreground">brandId</span>
+            {activeBrands.length > 0 ? (
+              <select
+                className="h-10 w-full rounded-md border bg-background px-3 font-mono text-sm outline-none ring-primary focus:ring-2"
+                value={brandId}
+                onChange={(e) => setBrandId(e.target.value)}
+              >
+                {activeBrands.map((brand) => (
+                  <option key={brand.brandId} value={brand.brandId}>
+                    {brand.brandId} — {brand.brandName}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                className="h-10 w-full rounded-md border bg-background px-3 font-mono text-sm outline-none ring-primary focus:ring-2"
+                value={brandId}
+                onChange={(e) => setBrandId(e.target.value)}
+                placeholder="elva-sales"
+                spellCheck={false}
+              />
+            )}
+          </label>
+          <div className="space-y-1.5">
+            <span className="text-xs font-medium text-muted-foreground">brandName (display)</span>
+            <div className="flex h-10 items-center rounded-md border bg-muted/30 px-3 font-mono text-sm text-muted-foreground">
+              {selectedBrandName || '—'}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -189,6 +253,7 @@ export function ApiPlayground() {
         <DltTestSuiteLoader
           appId={appId}
           apiKey={apiKey}
+          brandId={brandId}
           baseUrl={baseUrl}
           phone={phone}
           onPhoneChange={setPhone}
@@ -211,6 +276,7 @@ export function ApiPlayground() {
             endpoint={activeEndpoint}
             appId={appId}
             apiKey={apiKey}
+            brandId={brandId}
             onRequestComplete={handleRequestComplete}
           />
 
@@ -250,7 +316,7 @@ export function ApiPlayground() {
                 className="h-8 rounded-md border bg-background px-2 font-mono text-xs outline-none ring-primary focus:ring-2"
                 value={logBusiness}
                 onChange={(e) => setLogBusiness(e.target.value)}
-                placeholder="e.g. enandi (leave empty for all)"
+                placeholder="e.g. apnakart (leave empty for all)"
                 spellCheck={false}
               />
               <Button type="button" size="sm" variant="ghost" onClick={() => setLogBusiness('')}>
@@ -258,12 +324,12 @@ export function ApiPlayground() {
               </Button>
               {baseUrl ? (
                 <a
-                  href={logBusiness ? `${baseUrl}/${logBusiness}` : baseUrl}
+                  href={`${baseUrl}/raw`}
                   target="_blank"
                   rel="noreferrer"
                   className="text-xs text-primary hover:underline"
                 >
-                  Open backend log viewer ↗
+                  Open raw log viewer ↗
                 </a>
               ) : null}
             </div>

@@ -4,7 +4,7 @@
 |---|---|
 | **Purpose** | Comprehensive reference for all machine-oriented `error` codes returned by ELVA Notify API responses. |
 | **Intended Audience** | Client developers, support engineers, and integrators handling API failures. |
-| **Last Updated** | 2026-06-05 |
+| **Last Updated** | 2026-06-17 |
 | **Related Documents** | [Authentication](./authentication.md) · [OTP API](./otp.md) · [Notify API](./notify.md) · [Request Lifecycle](../architecture/request-lifecycle.md) |
 
 ---
@@ -70,9 +70,19 @@ flowchart TD
 |------|-------|-------------------|-------|------------|
 | 401 | `unauthorized` | `appId is required` | Missing, null, empty, or non-string `appId` | Include valid `appId` string in body |
 | 401 | `unauthorized` | `API key is required` | Missing, null, empty, or non-string `apiKey` | Include valid `apiKey` string in body |
-| 403 | `forbidden` | `Invalid app credentials` | Unknown `appId`, wrong `apiKey`, or invalid `appId` format | Verify `APP_CREDENTIALS_JSON` entry |
+| 403 | `forbidden` | `Invalid app credentials` | Wrong shared `appId` or `apiKey` | Use the platform pair from ELVA integration guide |
 
-**Endpoints:** All authenticated routes (`/otp/*`, `/notify`)
+### Brand access errors (Phase 3)
+
+| HTTP | error | message (typical) | Cause | Resolution |
+|------|-------|-------------------|-------|------------|
+| 400 | `brand_id_required` | `brandId is required` | OTP request missing `brandId` | Include approved `brandId` on `/otp/*` |
+| 400 | `brand_id_required` | `brandId or variables.businessName is required...` | SMS `/notify` without brand identity | Send `brandId` or `variables.businessName` matching an approved brand |
+| 403 | `brand_not_approved` | Brand is not registered or not approved | Unknown `brandId`, pending brand, or unregistered `businessName` | Submit onboarding request; use `GET /platform/brands` |
+| 403 | `brand_suspended` | Brand is suspended | Brand `status: suspended` in registry | Contact ELVA ops |
+| 403 | `template_not_allowed` | Template not enabled for brand | `templateKey` not in brand's `templates.notify` | Request template access or use an allowed template |
+
+**Endpoints:** `/otp/*` (requires `brandId`), `POST /notify` SMS (requires `brandId` or `variables.businessName`)
 
 ---
 
@@ -115,8 +125,8 @@ flowchart TD
 
 | HTTP | error | message (typical) | Cause | Resolution |
 |------|-------|-------------------|-------|------------|
-| 400 | `unsupported_business` | `Unsupported business: {id}` | `business` not in registry | Use registered business (e.g. `enandi`) |
-| 400 | `invalid_template` | `Unknown templateKey: {key}` | Template not in business catalog | See [eNandi](../businesses/enandi.md) template keys |
+| 400 | `unsupported_business` | `Unsupported business: {id}` | `business` not in registry | Use registered template group (e.g. `apnakart`) |
+| 400 | `invalid_template` | `Unknown templateKey: {key}` | Template not in business catalog | See [ApnaKart](../businesses/apnakart.md) template keys |
 | 400 | `otp_template_not_supported` | OTP must use `/otp/send`… | OTP template (`LOGIN_OTP`, `LOGIN_OTP_WITH_ID`) sent via `/notify` | Use [OTP API](./otp.md) instead |
 | 400 | `missing_variable` | `Missing required variable: {name}` | Required template variable absent | Include all required variables |
 | 400 | `validation_error` | Variable format messages | Wrong type, length, pattern, or date format | Match variable schema exactly |

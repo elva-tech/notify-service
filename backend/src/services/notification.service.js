@@ -1,13 +1,11 @@
 const config = require('../config/env');
 const smsService = require('./sms/sms.service');
 const emailService = require('./email/email.service');
-const { getOtpTemplate } = require('./email/emailTemplates');
+const { getOtpTemplate, getOtpEmailSubject } = require('./email/emailTemplates');
 const { buildDltPayload } = require('./dltPayloadResolver.service');
 const {
-  isOtpDltEnabled,
-  isLegacyFallbackAllowed,
-  isDltOnly,
-  getOtpDeliveryPolicy,
+  isDltOnlyForBrand,
+  getOtpDeliveryPolicyByBrand,
   buildOtpTemplateContext,
 } = require('./otpDltResolver.service');
 const { SUPPORTED_CHANNELS } = require('../config/channels');
@@ -55,8 +53,8 @@ async function sendLegacyOtpToRecipients(recipients, templateData, logContext, a
  * @returns {Promise<{ deliveryMode: string, providerRoute: string, fallbackAllowed: boolean, usedFallback: boolean }>}
  */
 async function sendOtpSmsToRecipients(recipients, templateData, logContext) {
-  const appId = templateData.appId;
-  const policy = getOtpDeliveryPolicy(appId);
+  const { appId, brandId } = templateData;
+  const policy = getOtpDeliveryPolicyByBrand(brandId);
   const useDlt = policy.dltActive;
   const fallbackAllowed = policy.fallbackAllowed;
 
@@ -64,6 +62,7 @@ async function sendOtpSmsToRecipients(recipients, templateData, logContext) {
     if (config.otp.dltEnabled) {
       logOtp('otp_dlt_fallback', 'started', logContext, {
         appId,
+        brandId,
         deliveryMode: 'legacy_q',
         fallbackAllowed: true,
         reason: 'dlt_inactive',
@@ -82,10 +81,12 @@ async function sendOtpSmsToRecipients(recipients, templateData, logContext) {
   }
 
   const otpContext = buildOtpTemplateContext({
-    appId,
+    brandId,
     otp: templateData.otp,
     ...Object.fromEntries(
-      Object.entries(templateData).filter(([key]) => key !== 'otp' && key !== 'appId'),
+      Object.entries(templateData).filter(
+        ([key]) => key !== 'otp' && key !== 'appId' && key !== 'brandId',
+      ),
     ),
   });
   const dltPayload = buildDltPayload(otpContext, {
@@ -98,10 +99,11 @@ async function sendOtpSmsToRecipients(recipients, templateData, logContext) {
     templateKey: otpContext.templateKey,
     templateId: dltPayload.templateId,
   });
-  const deliveryMode = isDltOnly(appId) ? 'dlt_only' : 'dlt';
+  const deliveryMode = isDltOnlyForBrand(brandId) ? 'dlt_only' : 'dlt';
 
   logOtp('otp_dlt_dispatch', 'started', dltLogContext, {
     appId,
+    brandId,
     deliveryMode,
     fallbackAllowed,
     business: otpContext.businessId,
@@ -111,6 +113,7 @@ async function sendOtpSmsToRecipients(recipients, templateData, logContext) {
 
   logOtp('fast2sms_request_prepared', 'started', dltLogContext, {
     appId,
+    brandId,
     templateKey: otpContext.templateKey,
     resolvedVariables: redactResolvedVariables(otpContext.variables),
     variablesValues: maskVariablesValues(dltPayload.variablesValues),
@@ -158,6 +161,7 @@ async function sendOtpSmsToRecipients(recipients, templateData, logContext) {
     if (!fallbackAllowed) {
       logOtp('otp_dlt_hard_failure', 'failed', dltLogContext, {
         appId,
+        brandId,
         deliveryMode: 'dlt_only',
         fallbackAllowed: false,
         business: otpContext.businessId,
@@ -170,6 +174,7 @@ async function sendOtpSmsToRecipients(recipients, templateData, logContext) {
 
     logOtp('otp_dlt_fallback', 'started', logContext, {
       appId,
+      brandId,
       deliveryMode: 'legacy_q',
       fallbackAllowed: true,
       reason: 'dlt_provider_failure',
@@ -237,7 +242,14 @@ async function handleEmail({
   message,
   templateData,
 }) {
-  const resolvedSubject = subject?.trim() || 'Your ELVA OTP Code';
+  const resolvedSubject = subject?.trim()
+    || (templateData?.otp
+      ? getOtpEmailSubject({
+        brandName: templateData.brandName,
+        businessName: templateData.businessName,
+        appId: templateData.appId,
+      })
+      : 'Your ELVA OTP Code');
 
   let resolvedHtml;
   if (typeof html === 'string' && html.trim()) {
@@ -247,6 +259,8 @@ async function handleEmail({
   } else if (templateData?.otp) {
     resolvedHtml = getOtpTemplate({
       otp: templateData.otp,
+      brandName: templateData.brandName,
+      businessName: templateData.businessName,
       appId: templateData.appId,
       fallbackMessage: message,
     });
@@ -262,11 +276,16 @@ function resolveInitialOtpLogDetails(templateData, normalizedChannel) {
     return {};
   }
   if (normalizedChannel === 'EMAIL') {
-    return { appId: templateData.appId ?? null, deliveryMode: 'email' };
+    return {
+      appId: templateData.appId ?? null,
+      brandId: templateData.brandId ?? null,
+      deliveryMode: 'email',
+    };
   }
-  const policy = getOtpDeliveryPolicy(templateData.appId);
+  const policy = getOtpDeliveryPolicyByBrand(templateData.brandId);
   return {
     appId: templateData.appId ?? null,
+    brandId: templateData.brandId ?? null,
     deliveryMode: policy.deliveryPolicy === 'legacy_q' ? 'legacy_q' : policy.deliveryPolicy,
     fallbackAllowed: policy.fallbackAllowed,
   };

@@ -6,10 +6,22 @@ AppCredentials:
   properties:
     appId:
       type: string
-      description: Application identifier registered in APP_CREDENTIALS_JSON
+      description: ELVA-issued platform application identifier
     apiKey:
       type: string
-      description: API secret paired with appId
+      description: ELVA-issued API key paired with appId (sent after onboarding approval)
+
+BrandIdField:
+  type: object
+  required:
+    - brandId
+  properties:
+    brandId:
+      type: string
+      pattern: '^[a-z0-9_-]{2,32}$'
+      description: |
+        Approved tenant brand slug (e.g. enandi, cms, puma). OTP storage and SMS display name
+        are scoped per brandId. See GET /platform/brands.
 
 HealthResponse:
   type: object
@@ -35,6 +47,7 @@ HealthResponse:
 OtpSendSmsRequest:
   allOf:
     - $ref: '#/AppCredentials'
+    - $ref: '#/BrandIdField'
     - type: object
       required:
         - phone
@@ -46,10 +59,17 @@ OtpSendSmsRequest:
           type: string
           enum: [SMS]
           default: SMS
+        loginId:
+          type: string
+          description: Optional for LOGIN_OTP_WITH_ID when enabled for the brand
+        businessName:
+          type: string
+          description: Optional override of registry brandName in DLT SMS text
 
 OtpSendEmailRequest:
   allOf:
     - $ref: '#/AppCredentials'
+    - $ref: '#/BrandIdField'
     - type: object
       required:
         - channel
@@ -87,6 +107,7 @@ OtpSendSuccess:
 OtpVerifySmsRequest:
   allOf:
     - $ref: '#/AppCredentials'
+    - $ref: '#/BrandIdField'
     - type: object
       required:
         - phone
@@ -102,6 +123,7 @@ OtpVerifySmsRequest:
 OtpVerifyEmailRequest:
   allOf:
     - $ref: '#/AppCredentials'
+    - $ref: '#/BrandIdField'
     - type: object
       required:
         - email

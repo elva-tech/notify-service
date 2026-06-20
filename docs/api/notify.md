@@ -4,8 +4,8 @@
 |---|---|
 | **Purpose** | Document the unified `POST /notify` endpoint for SMS (legacy and DLT template) and EMAIL notifications. |
 | **Intended Audience** | Client developers and business integrators sending transactional notifications. |
-| **Last Updated** | 2026-06-05 |
-| **Related Documents** | [Authentication](./authentication.md) · [Error Codes](./error-codes.md) · [DLT Layer](../architecture/dlt-layer.md) · [Request Lifecycle](../architecture/request-lifecycle.md) · [eNandi Business](../businesses/enandi.md) |
+| **Last Updated** | 2026-06-17 |
+| **Related Documents** | [Authentication](./authentication.md) · [Error Codes](./error-codes.md) · [DLT Layer](../architecture/dlt-layer.md) · [Request Lifecycle](../architecture/request-lifecycle.md) · [ApnaKart Templates](../businesses/apnakart.md) |
 
 ---
 
@@ -15,13 +15,13 @@
 
 | Channel | Modes | Provider |
 |---------|-------|----------|
-| `SMS` | Legacy (`message`) or DLT template (`templateKey` + `variables`; `appId` identifies the business) | Fast2SMS |
+| `SMS` | Legacy (`message`) or DLT template (`templateKey` + `variables`; brand resolved via `brandId` or `variables.businessName`) | Fast2SMS |
 | `EMAIL` | HTML (`html`) or placeholder template (`template` + `data`) | SendGrid |
 
 SMS mode is classified by `classifyNotifySmsMode()`:
 
 - **legacy** — `message` field present
-- **template** — `templateKey` present (`appId` resolves the business module)
+- **template** — `templateKey` present (brand resolved from `brandId` or `variables.businessName`)
 - **mixed** — both present → **400** error
 - **neither** — no `message` and no `templateKey` → **400** error
 
@@ -38,22 +38,38 @@ ELVA generates and verifies OTP codes. `/notify` rejects OTP templates with **40
 
 See [OTP API](./otp.md) for login flows.
 
+### Brand approval gate (SMS)
+
+Before SMS delivery, the service verifies the tenant brand is **approved** in `brand-registry.json`:
+
+| Identity in request | Example |
+|---------------------|---------|
+| `brandId` (optional top-level field) | `"brandId": "enandi"` |
+| `variables.businessName` (DLT templates) | `"businessName": "eNandi"` → resolves brand `enandi` |
+
+- **EMAIL** channel is not brand-gated.
+- Unapproved or unknown brands → **403** `brand_not_approved`
+- Template not enabled for brand → **403** `template_not_allowed`
+
+See [Error Codes](./error-codes.md) and `GET /platform/brands`.
+
 ---
 
 ## Endpoint
 
-| Method | Path | Auth |
-|--------|------|------|
-| `POST` | `/notify` | Yes (`appId` + `apiKey` in body) |
+| Method | Path | Auth | Middleware (SMS) |
+|--------|------|------|------------------|
+| `POST` | `/notify` | Yes (`appId` + `apiKey` in body) | `validateAppApiKey` → `validateApprovedBrand` |
 
 ### Common Required Fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `appId` | string | Application identifier |
-| `apiKey` | string | API secret |
+| `appId` | string | ELVA-issued platform application ID |
+| `apiKey` | string | ELVA-issued API key paired with your `appId` |
 | `channel` | string | `SMS` or `EMAIL` |
 | `to` | string[] | Non-empty array of recipient addresses/numbers |
+| `brandId` | string | Optional on SMS; approved brand slug. Alternatively use `variables.businessName` on DLT templates. |
 
 ---
 
@@ -79,8 +95,9 @@ sequenceDiagram
 
 ```json
 {
-  "appId": "enandi-app",
-  "apiKey": "your-secret-key",
+  "appId": "ELVA_NOTIFY",
+  "apiKey": "shared-platform-api-key",
+  "brandId": "enandi",
   "channel": "SMS",
   "to": ["919876543210"],
   "message": "Your refund of Rs. 500 has been processed."
@@ -126,8 +143,9 @@ sequenceDiagram
 
 ```json
 {
-  "appId": "enandi",
-  "apiKey": "your-secret-key",
+  "appId": "ELVA_NOTIFY",
+  "apiKey": "shared-platform-api-key",
+  "brandId": "enandi",
   "channel": "SMS",
   "to": ["919876543210"],
   "templateKey": "ORDER_DELIVERED",
@@ -193,8 +211,9 @@ flowchart TD
 
 ```json
 {
-  "appId": "enandi-app",
-  "apiKey": "your-secret-key",
+  "appId": "ELVA_NOTIFY",
+  "apiKey": "shared-platform-api-key",
+  "brandId": "enandi",
   "channel": "EMAIL",
   "to": ["user@example.com"],
   "subject": "Welcome to eNandi",
@@ -206,8 +225,9 @@ flowchart TD
 
 ```json
 {
-  "appId": "enandi-app",
-  "apiKey": "your-secret-key",
+  "appId": "ELVA_NOTIFY",
+  "apiKey": "shared-platform-api-key",
+  "brandId": "enandi",
   "channel": "EMAIL",
   "to": ["user@example.com"],
   "subject": "Account Update",
@@ -219,7 +239,7 @@ flowchart TD
 }
 ```
 
-> The `template` field builds a simple HTML wrapper around the subject and JSON data payload. It is not connected to eNandi SMS templates.
+> The `template` field builds a simple HTML wrapper around the subject and JSON data payload. It is not connected to the ApnaKart SMS template catalog.
 
 ### Success Response — 200
 
@@ -280,8 +300,9 @@ The `message` field is sanitized — provider secrets and stack traces are never
 
 ```json
 {
-  "appId": "enandi",
-  "apiKey": "your-secret-key",
+  "appId": "ELVA_NOTIFY",
+  "apiKey": "shared-platform-api-key",
+  "brandId": "enandi",
   "channel": "SMS",
   "to": ["919876543210", "919876543211"],
   "templateKey": "ORDER_PLACED",
@@ -302,8 +323,9 @@ The `message` field is sanitized — provider secrets and stack traces are never
 curl -X POST {{API_BASE_URL}}/notify \
   -H "Content-Type: application/json" \
   -d '{
-    "appId": "enandi-app",
-    "apiKey": "your-secret-key",
+    "appId": "ELVA_NOTIFY",
+    "apiKey": "shared-platform-api-key",
+    "brandId": "enandi",
     "channel": "SMS",
     "to": ["919876543210"],
     "message": "Hello from ELVA"
@@ -316,8 +338,9 @@ curl -X POST {{API_BASE_URL}}/notify \
 curl -X POST {{API_BASE_URL}}/notify \
   -H "Content-Type: application/json" \
   -d '{
-    "appId": "enandi",
-    "apiKey": "your-secret-key",
+    "appId": "ELVA_NOTIFY",
+    "apiKey": "shared-platform-api-key",
+    "brandId": "enandi",
     "channel": "SMS",
     "to": ["919876543210"],
     "templateKey": "ORDER_PLACED",
@@ -369,4 +392,4 @@ flowchart TB
 
 > **Phone numbers** are normalized to digits-only before sending to Fast2SMS.
 
-> **EMAIL `template` field** is a simple HTML wrapper, not the eNandi SMS template catalog.
+> **EMAIL `template` field** is a simple HTML wrapper, not the ApnaKart SMS template catalog.

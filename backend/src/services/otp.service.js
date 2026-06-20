@@ -1,5 +1,5 @@
 const { normalizePhone } = require('../utils/phone');
-const { normalizeAppId } = require('../utils/appId');
+const { normalizeBrandId } = require('../utils/brandId');
 const { normalizeEmail } = require('../utils/email');
 const {
   generateSixDigitOtp,
@@ -27,9 +27,9 @@ function isCompleteOtpRecord(record) {
   );
 }
 
-function logVerifyOutcome(logContext, appId, outcome, reason = null) {
+function logVerifyOutcome(logContext, brandId, outcome, reason = null) {
   const details = {
-    appId: appId ?? null,
+    brandId: brandId ?? null,
     outcome,
     ...(reason ? { reason } : {}),
   };
@@ -60,17 +60,17 @@ function normalizeRecipient(recipient) {
 
 /**
  * @param {string} recipient
- * @param {string} appId
+ * @param {string} brandId
  * @returns {Promise<{ otp: string, expiresAt: number, expiresInSeconds: number }>}
  */
-async function generateOTP(recipient, appId, logContext = {}) {
+async function generateOTP(recipient, brandId, logContext = {}) {
   const recipientKey = normalizeRecipient(recipient);
-  const appKey = normalizeAppId(appId);
+  const brandKey = normalizeBrandId(brandId);
   const channel = recipientKey.includes('@') ? 'EMAIL' : 'SMS';
   const otp = generateSixDigitOtp();
   const salt = randomSalt();
   const hashBuf = hashOtp(otp, salt);
-  const key = redis.otpKey(appKey, recipientKey);
+  const key = redis.otpKey(brandKey, recipientKey);
 
   await redis.setHashWithExpire(
     key,
@@ -90,7 +90,7 @@ async function generateOTP(recipient, appId, logContext = {}) {
       recipient: recipientKey,
       channel,
     }),
-    { appId: appKey },
+    { brandId: brandKey },
   );
 
   return {
@@ -103,16 +103,16 @@ async function generateOTP(recipient, appId, logContext = {}) {
 /**
  * @param {string} recipient
  * @param {string} otp
- * @param {string} appId
+ * @param {string} brandId
  * @returns {Promise<{ valid: true } | { valid: false, reason: string }>}
  */
-async function verifyOTP(recipient, otp, appId, logContext = {}) {
+async function verifyOTP(recipient, otp, brandId, logContext = {}) {
   if (typeof otp !== 'string') {
     logVerifyOutcome(buildLogContext(logContext), null, 'rejected', 'invalid_input');
     return { valid: false, reason: 'invalid_input' };
   }
 
-  if (typeof appId !== 'string') {
+  if (typeof brandId !== 'string') {
     logVerifyOutcome(buildLogContext(logContext), null, 'rejected', 'invalid_input');
     return { valid: false, reason: 'invalid_input' };
   }
@@ -121,19 +121,19 @@ async function verifyOTP(recipient, otp, appId, logContext = {}) {
   try {
     recipientKey = normalizeRecipient(recipient);
   } catch {
-    logVerifyOutcome(buildLogContext(logContext), appId, 'rejected', 'invalid_contact');
+    logVerifyOutcome(buildLogContext(logContext), brandId, 'rejected', 'invalid_contact');
     return { valid: false, reason: 'invalid_contact' };
   }
 
-  let appKey;
+  let brandKey;
   try {
-    appKey = normalizeAppId(appId);
+    brandKey = normalizeBrandId(brandId);
   } catch {
     logVerifyOutcome(buildLogContext({
       ...logContext,
       recipient: recipientKey,
-    }), appId, 'rejected', 'invalid_app_id');
-    return { valid: false, reason: 'invalid_app_id' };
+    }), brandId, 'rejected', 'invalid_brand_id');
+    return { valid: false, reason: 'invalid_brand_id' };
   }
 
   const code = otp.trim();
@@ -142,11 +142,11 @@ async function verifyOTP(recipient, otp, appId, logContext = {}) {
       ...logContext,
       recipient: recipientKey,
       channel: recipientKey.includes('@') ? 'EMAIL' : 'SMS',
-    }), appKey, 'rejected', 'invalid_otp_format');
+    }), brandKey, 'rejected', 'invalid_otp_format');
     return { valid: false, reason: 'invalid_otp_format' };
   }
 
-  const key = redis.otpKey(appKey, recipientKey);
+  const key = redis.otpKey(brandKey, recipientKey);
   const record = await redis.getHashAll(key);
 
   const otpLogContext = buildLogContext({
@@ -156,21 +156,21 @@ async function verifyOTP(recipient, otp, appId, logContext = {}) {
   });
 
   if (!isCompleteOtpRecord(record)) {
-    logVerifyOutcome(otpLogContext, appKey, 'rejected', 'not_found');
+    logVerifyOutcome(otpLogContext, brandKey, 'rejected', 'not_found');
     return { valid: false, reason: 'not_found' };
   }
 
   const attempts = parseInt(record[ATTEMPTS_FIELD], 10);
   if (Number.isNaN(attempts)) {
-    logVerifyOutcome(otpLogContext, appKey, 'rejected', 'not_found');
+    logVerifyOutcome(otpLogContext, brandKey, 'rejected', 'not_found');
     return { valid: false, reason: 'not_found' };
   }
 
   if (attempts >= MAX_ATTEMPTS) {
     await redis.deleteKey(key);
-    logVerifyOutcome(otpLogContext, appKey, 'rejected', 'max_attempts');
+    logVerifyOutcome(otpLogContext, brandKey, 'rejected', 'max_attempts');
     logOtp('otp_verify_failed', 'rejected', otpLogContext, {
-      appId: appKey,
+      brandId: brandKey,
       reason: 'max_attempts',
     });
     return { valid: false, reason: 'max_attempts' };
@@ -182,39 +182,39 @@ async function verifyOTP(recipient, otp, appId, logContext = {}) {
 
   if (digestsEqual(candidate, storedHash)) {
     await redis.deleteKey(key);
-    logVerifyOutcome(otpLogContext, appKey, 'success');
-    logOtp('otp_verified', 'completed', otpLogContext, { appId: appKey });
+    logVerifyOutcome(otpLogContext, brandKey, 'success');
+    logOtp('otp_verified', 'completed', otpLogContext, { brandId: brandKey });
     return { valid: true };
   }
 
   const nextAttempts = await redis.hashIncrementBy(key, ATTEMPTS_FIELD, 1);
   if (nextAttempts >= MAX_ATTEMPTS) {
     await redis.deleteKey(key);
-    logVerifyOutcome(otpLogContext, appKey, 'rejected', 'max_attempts');
+    logVerifyOutcome(otpLogContext, brandKey, 'rejected', 'max_attempts');
     logOtp('otp_verify_failed', 'rejected', otpLogContext, {
-      appId: appKey,
+      brandId: brandKey,
       reason: 'max_attempts',
     });
     return { valid: false, reason: 'max_attempts' };
   }
 
-  logVerifyOutcome(otpLogContext, appKey, 'rejected', 'mismatch');
+  logVerifyOutcome(otpLogContext, brandKey, 'rejected', 'mismatch');
   logOtp('otp_verify_failed', 'rejected', otpLogContext, {
-    appId: appKey,
+    brandId: brandKey,
     reason: 'mismatch',
   });
   return { valid: false, reason: 'mismatch' };
 }
 
 /**
- * Removes any stored OTP for the phone and app (e.g. after a failed SMS send).
+ * Removes any stored OTP for the recipient and brand (e.g. after a failed SMS send).
  * @param {string} recipient
- * @param {string} appId
+ * @param {string} brandId
  */
-async function revokeOTP(recipient, appId) {
+async function revokeOTP(recipient, brandId) {
   const recipientKey = normalizeRecipient(recipient);
-  const appKey = normalizeAppId(appId);
-  await redis.deleteKey(redis.otpKey(appKey, recipientKey));
+  const brandKey = normalizeBrandId(brandId);
+  await redis.deleteKey(redis.otpKey(brandKey, recipientKey));
 }
 
 module.exports = {

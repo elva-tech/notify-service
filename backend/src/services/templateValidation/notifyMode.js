@@ -25,8 +25,8 @@ function hasLegacyMessage(body) {
 
 /**
  * Resolves the business module id for DLT template notify requests.
- * `appId` identifies the tenant. When it matches a registered business id (e.g. "enandi"),
- * that module is used. Otherwise, `otp-mappings.json` is consulted (e.g. CMS → enandi).
+ * `appId` identifies the tenant. When it matches a registered template group id (e.g. "apnakart"),
+ * that module is used. Otherwise, `otp-mappings.json` is consulted (e.g. CMS → apnakart).
  * The legacy `business` field is accepted when it matches the resolved id but is not required.
  *
  * @param {object} body

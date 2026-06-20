@@ -10,6 +10,7 @@ const PHONE_KEY = 'elva-dlt-suite-phone';
 interface DltTestSuiteLoaderProps {
   appId: string;
   apiKey: string;
+  brandId: string;
   baseUrl: string;
   phone: string;
   onPhoneChange: (phone: string) => void;
@@ -20,6 +21,7 @@ interface DltTestSuiteLoaderProps {
 export function DltTestSuiteLoader({
   appId,
   apiKey,
+  brandId,
   baseUrl,
   phone,
   onPhoneChange,
@@ -63,6 +65,11 @@ export function DltTestSuiteLoader({
     [manifest, selectedBusinessId],
   );
 
+  const activeBrands = useMemo(
+    () => (manifest?.brands.brands ?? []).filter((brand) => brand.status === 'active'),
+    [manifest],
+  );
+
   if (loading) {
     return <p className="text-sm text-muted-foreground">Loading template groups from backend…</p>;
   }
@@ -103,10 +110,11 @@ export function DltTestSuiteLoader({
       {selectedBusiness ? (
         <DltTestSuite
           business={selectedBusiness}
-          otpMappings={manifest.otpMappings.mappings}
+          brands={activeBrands}
           globalDltEnabled={manifest.otpMappings.runtime.globalDltEnabled}
           appId={appId}
           apiKey={apiKey}
+          brandId={brandId}
           baseUrl={baseUrl}
           phone={phone}
           onPhoneChange={onPhoneChange}

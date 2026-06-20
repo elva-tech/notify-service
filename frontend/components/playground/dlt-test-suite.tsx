@@ -12,7 +12,7 @@ import {
   pushDltExecutionHistory,
   type DltExecutionHistoryEntry,
 } from '@/lib/dlt-execution-history';
-import type { BusinessConfig, OtpMappingEntry } from '@/lib/business-config-types';
+import type { BusinessConfig } from '@/lib/business-config-types';
 import {
   buildDefaultVariableValues,
   buildSuiteRequestPayload,
@@ -25,14 +25,21 @@ import {
   suiteTemplateAnchorId,
   validateTemplateVariables,
 } from '@/lib/dlt-test-utils';
+import { resolveBrandDisplayName } from '@/lib/playground-brand-utils';
 import { cn } from '@/lib/utils';
 
 interface DltTestSuiteProps {
   business: BusinessConfig;
-  otpMappings: OtpMappingEntry[];
+  brands: Array<{
+    brandId: string;
+    brandName: string;
+    status: string;
+    otpPolicy?: { dltEnabled?: boolean; legacyRouteEnabled?: boolean };
+  }>;
   globalDltEnabled: boolean;
   appId: string;
   apiKey: string;
+  brandId: string;
   baseUrl: string;
   phone: string;
   onPhoneChange: (phone: string) => void;
@@ -43,10 +50,11 @@ type SuiteRunStatus = 'pass' | 'fail' | 'skipped' | 'pending' | 'running';
 
 export function DltTestSuite({
   business,
-  otpMappings,
+  brands,
   globalDltEnabled,
   appId,
   apiKey,
+  brandId,
   baseUrl,
   phone,
   onPhoneChange,
@@ -54,6 +62,11 @@ export function DltTestSuite({
 }: DltTestSuiteProps) {
   const templates = useMemo(() => sortTemplatesForSuite(business.templates), [business.templates]);
   const suiteOrder = useMemo(() => templates.map((template) => template.templateKey), [templates]);
+
+  const brandDisplayName = useMemo(
+    () => resolveBrandDisplayName(brands, brandId),
+    [brands, brandId],
+  );
 
   const [liveMode, setLiveMode] = useState(false);
   const [search, setSearch] = useState(initialSearch);
@@ -64,7 +77,7 @@ export function DltTestSuite({
   const [cardVariables, setCardVariables] = useState<Record<string, Record<string, string>>>(() => {
     const map: Record<string, Record<string, string>> = {};
     for (const template of business.templates) {
-      const defaults = buildDefaultVariableValues(template);
+      const defaults = buildDefaultVariableValues(template, resolveBrandDisplayName(brands, brandId));
       delete defaults.otp;
       map[template.templateKey] = defaults;
     }
@@ -78,13 +91,13 @@ export function DltTestSuite({
   useEffect(() => {
     const map: Record<string, Record<string, string>> = {};
     for (const template of business.templates) {
-      const defaults = buildDefaultVariableValues(template);
+      const defaults = buildDefaultVariableValues(template, brandDisplayName);
       delete defaults.otp;
       map[template.templateKey] = defaults;
     }
     setCardVariables(map);
     setSuiteProgress({});
-  }, [business.businessId, business.templates]);
+  }, [business.businessId, business.templates, brandDisplayName]);
 
   useEffect(() => {
     if (!initialSearch) return;
@@ -138,18 +151,18 @@ export function DltTestSuite({
         deliveryMode:
           result.deliveryMode ||
           (template
-            ? resolveDeliveryMode(appId, template, otpMappings, globalDltEnabled)
+            ? resolveDeliveryMode(brandId, template, brands, globalDltEnabled)
             : 'unknown'),
         liveMode,
       });
       setHistory(entry);
     },
-    [appId, business.businessId, business.templates, globalDltEnabled, liveMode, otpMappings, phone],
+    [brandId, business.businessId, business.templates, globalDltEnabled, liveMode, brands, phone],
   );
 
   async function executeTemplate(template: (typeof templates)[number]): Promise<TemplateExecutionResult> {
     const variables = cardVariables[template.templateKey] ?? buildDefaultVariableValues(template);
-    const deliveryMode = resolveDeliveryMode(appId, template, otpMappings, globalDltEnabled);
+    const deliveryMode = resolveDeliveryMode(brandId, template, brands, globalDltEnabled);
     const validation = validateTemplateVariables(template, variables);
 
     if (!validation.ok) {
@@ -200,7 +213,26 @@ export function DltTestSuite({
       };
     }
 
-    const payload = buildSuiteRequestPayload(business.businessId, template, { appId, apiKey, phone, variables });
+    if (!brandId.trim()) {
+      return {
+        status: 'fail',
+        httpStatus: null,
+        responseJson: JSON.stringify({ success: false, error: 'validation_error', message: 'brandId is required for OTP and SMS notify' }, null, 2),
+        requestId: null,
+        deliveryMode,
+        elapsedMs: null,
+        errorMessage: 'brandId is required for OTP and SMS notify',
+      };
+    }
+
+    const payload = buildSuiteRequestPayload(business.businessId, template, {
+      appId,
+      apiKey,
+      brandId,
+      phone,
+      variables,
+      brandDisplayName,
+    });
     const path = getSuiteApiPath(template);
     const start = Date.now();
     const res = await fetch(`${baseUrl}${path}`, {
@@ -261,7 +293,9 @@ export function DltTestSuite({
         <h2 className="text-2xl font-bold tracking-tight">DLT Templates — {business.displayName}</h2>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
           Loaded from <code className="rounded bg-muted px-1">GET /platform/businesses/{business.businessId}</code>.
-          Dry Run validates locally; Live DLT calls the backend.
+          Dry Run validates locally; Live DLT calls the backend. OTP SMS/email branding uses registry brandName for{' '}
+          <code className="rounded bg-muted px-1">{brandId.trim() || 'brandId'}</code>
+          {brandDisplayName ? ` (${brandDisplayName})` : ''}.
         </p>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -351,12 +385,13 @@ export function DltTestSuite({
             template={template}
             appId={appId}
             apiKey={apiKey}
+            brandId={brandId}
             phone={phone}
             baseUrl={baseUrl}
             liveMode={liveMode}
             highlighted={highlightKey === template.templateKey}
             variables={cardVariables[template.templateKey] ?? {}}
-            otpMappings={otpMappings}
+            brands={brands}
             globalDltEnabled={globalDltEnabled}
             onVariablesChange={(next) => setCardVariables((prev) => ({ ...prev, [template.templateKey]: next }))}
             onResult={(result) => recordHistory(template.templateKey, result)}

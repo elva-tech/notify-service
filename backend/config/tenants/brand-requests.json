@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "requests": [
+    {
+      "id": "req_20260617154803_b86980",
+      "status": "approved",
+      "submittedAt": "2026-06-17T15:48:03.898Z",
+      "submittedBy": {
+        "name": "Arun P N",
+        "email": "arunpn866@gmail.com",
+        "team": "ELVA Sales",
+        "notes": "Required for ELVA Sales"
+      },
+      "brandId": "elva-sales",
+      "brandName": "ELVA Sales",
+      "businessModule": "apnakart",
+      "templates": {
+        "otp": [
+          "LOGIN_OTP"
+        ],
+        "notify": [
+          "ORDER_PLACED",
+          "ORDER_DELIVERED",
+          "OUT_FOR_DELIVERY"
+        ]
+      },
+      "otpPolicy": {
+        "templateKey": "LOGIN_OTP",
+        "dltEnabled": true,
+        "legacyRouteEnabled": false
+      },
+      "approvedAt": "2026-06-17T15:49:24.851Z",
+      "rejectedAt": null,
+      "rejectionReason": null,
+      "reviewedBy": "ops",
+      "notes": null
+    },
+    {
+      "id": "req_20260617152229_a615f4",
+      "status": "approved",
+      "submittedAt": "2026-06-17T15:22:29.371Z",
+      "submittedBy": {
+        "name": "Arun P N",
+        "email": "arunpn866@gmail.com",
+        "team": "PUMA Dev Team",
+        "notes": null
+      },
+      "brandId": "puma",
+      "brandName": "PUMA",
+      "businessModule": "apnakart",
+      "templates": {
+        "otp": [
+          "LOGIN_OTP"
+        ],
+        "notify": [
+          "ORDER_PLACED",
+          "ORDER_DELIVERED",
+          "OUT_FOR_DELIVERY"
+        ]
+      },
+      "otpPolicy": {
+        "templateKey": "LOGIN_OTP",
+        "dltEnabled": true,
+        "legacyRouteEnabled": false
+      },
+      "approvedAt": "2026-06-17T15:24:57.443Z",
+      "rejectedAt": null,
+      "rejectionReason": null,
+      "reviewedBy": "ops",
+      "notes": null
+    },
+    {
+      "id": "req_20260617145554_e76507",
+      "status": "rejected",
+      "submittedAt": "2026-06-17T14:55:54.680Z",
+      "submittedBy": {
+        "name": "Test",
+        "email": "test@example.com",
+        "team": "QA",
+        "notes": null
+      },
+      "brandId": "rawtest1",
+      "brandName": "Raw Test",
+      "businessModule": "apnakart",
+      "templates": {
+        "otp": [
+          "LOGIN_OTP"
+        ],
+        "notify": [
+          "ORDER_PLACED"
+        ]
+      },
+      "otpPolicy": {
+        "templateKey": "LOGIN_OTP",
+        "dltEnabled": true,
+        "legacyRouteEnabled": false
+      },
+      "approvedAt": null,
+      "rejectedAt": "2026-06-17T15:13:46.751Z",
+      "rejectionReason": "reject",
+      "reviewedBy": "ops",
+      "notes": null
+    },
+    {
+      "id": "req_20260617143945_c95470",
+      "status": "approved",
+      "submittedAt": "2026-06-17T14:39:45.720Z",
+      "submittedBy": {
+        "name": "Test Dev",
+        "email": "dev@test.com",
+        "team": "QA",
+        "notes": null
+      },
+      "brandId": "smoketestmqi6gezu",
+      "brandName": "Smoke Test",
+      "businessModule": "apnakart",
+      "templates": {
+        "otp": [
+          "LOGIN_OTP"
+        ],
+        "notify": [
+          "ORDER_PLACED"
+        ]
+      },
+      "otpPolicy": {
+        "templateKey": "LOGIN_OTP",
+        "dltEnabled": true,
+        "legacyRouteEnabled": false
+      },
+      "approvedAt": "2026-06-17T15:13:52.104Z",
+      "rejectedAt": null,
+      "rejectionReason": null,
+      "reviewedBy": "ops",
+      "notes": null
+    }
+  ]
+}

@@ -22,9 +22,9 @@
 
 | Asset | Pattern | Example |
 |-------|---------|---------|
-| `businessId` | `^[a-z][a-z0-9-]*$` | `enandi`, `workspace` |
+| `businessId` | `^[a-z][a-z0-9-]*$` | `apnakart`, `workspace` |
 | `templateKey` | `SCREAMING_SNAKE_CASE` | `LOGIN_OTP` |
-| Folder name | Must equal `businessId` | `backend/config/businesses/enandi/` |
+| Folder name | Must equal `businessId` | `backend/config/businesses/apnakart/` |
 
 ---
 

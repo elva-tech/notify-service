@@ -8,10 +8,12 @@
 const registry = require('./registry');
 const { loadBusinessConfigurations } = require('./configLoader');
 const { validateOtpMappingsAtStartup } = require('../services/otpMappingValidator.service');
+const { validateBrandRegistryAtStartup } = require('../services/brandRegistry.service');
 const { writeOtpHealthSnapshot } = require('../services/otpHealthSnapshot.service');
 const { writeBusinessHealthSnapshot } = require('../services/businessConfigAudit.service');
 
 loadBusinessConfigurations();
+validateBrandRegistryAtStartup();
 validateOtpMappingsAtStartup();
 writeOtpHealthSnapshot('startup');
 writeBusinessHealthSnapshot('startup');

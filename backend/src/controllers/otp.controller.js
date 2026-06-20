@@ -1,11 +1,14 @@
 const { normalizePhone } = require('../utils/phone');
 const { normalizeEmail } = require('../utils/email');
 const { normalizeAppId } = require('../utils/appId');
+const { normalizeBrandId } = require('../utils/brandId');
 const otpService = require('../services/otp.service');
 const otpCooldownService = require('../services/otpCooldown.service');
 const notificationService = require('../services/notification.service');
 const { buildDevProviderError } = require('../utils/providerErrorResponse');
-const { resolveOtpTemplate } = require('../services/otpDltResolver.service');
+const { resolveOtpTemplateByBrand } = require('../services/otpDltResolver.service');
+const { getOtpEmailSubject } = require('../services/email/emailTemplates');
+const { getBrand } = require('../services/brandRegistry.service');
 
 function requireStringField(body, field) {
   if (body == null || typeof body !== 'object') {
@@ -52,13 +55,55 @@ function resolveChannel(rawChannel) {
 }
 
 /**
- * Shared validation for send / resend OTP (phone, appId, normalization).
+ * Validates brandId and attaches normalized brand context to the request.
+ * @returns {boolean}
+ */
+function assertBrandIdValid(req, res) {
+  const brandCheck = requireStringField(req.body, 'brandId');
+  if (!brandCheck.ok) {
+    validationError(req, res, brandCheck.message);
+    return false;
+  }
+
+  try {
+    req.normalizedBrandId = normalizeBrandId(req.body.brandId);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Invalid brandId';
+    validationError(req, res, message);
+    return false;
+  }
+
+  const brand = getBrand(req.normalizedBrandId);
+  if (!brand) {
+    validationError(req, res, `Unknown brandId: ${req.normalizedBrandId}`);
+    return false;
+  }
+
+  if (!brand.templates.otp.length) {
+    validationError(
+      req,
+      res,
+      `Brand "${req.normalizedBrandId}" does not have OTP templates enabled`,
+    );
+    return false;
+  }
+
+  req.brand = brand;
+  return true;
+}
+
+/**
+ * Shared validation for send / resend OTP (phone, appId, brandId, normalization).
  * @returns {boolean} true if valid; otherwise sends error response and returns false.
  */
 function assertSendOtpBodyValid(req, res) {
   const appCheck = requireStringField(req.body, 'appId');
   if (!appCheck.ok) {
     validationError(req, res, appCheck.message);
+    return false;
+  }
+
+  if (!assertBrandIdValid(req, res)) {
     return false;
   }
 
@@ -116,6 +161,7 @@ const verifyReasonHttp = {
   invalid_phone: { status: 400, message: 'Invalid phone number' },
   invalid_contact: { status: 400, message: 'Invalid phone number or email' },
   invalid_app_id: { status: 400, message: 'Invalid app id' },
+  invalid_brand_id: { status: 400, message: 'Invalid brandId' },
   invalid_otp_format: { status: 400, message: 'OTP must be exactly 6 digits' },
   not_found: { status: 404, message: 'No active OTP for this contact. Request a new code.' },
   expired: { status: 410, message: 'OTP has expired. Request a new code.' },
@@ -130,20 +176,22 @@ const verifyReasonHttp = {
 async function sendOtpImpl(req, res, next) {
   try {
     const { appId } = req.body;
+    const brandId = req.normalizedBrandId;
     const channel = req.notificationChannel || 'SMS';
     const to = req.notificationTarget;
 
-    const { otp, expiresInSeconds } = await otpService.generateOTP(to, appId, {
+    const { otp, expiresInSeconds } = await otpService.generateOTP(to, brandId, {
       requestId: req.requestId,
       channel,
       recipient: to,
     });
 
-    const templateData = { otp, appId };
+    const brandName = req.brand?.brandName ?? req.resolvedBrand?.brandName;
+    const templateData = { otp, appId, brandId, brandName };
     try {
-      const otpTemplate = resolveOtpTemplate(appId);
+      const otpTemplate = resolveOtpTemplateByBrand(brandId);
       for (const variable of otpTemplate.variables) {
-        if (variable.name === 'otp') {
+        if (variable.name === 'otp' || variable.name === 'businessName') {
           continue;
         }
         const value = req.body?.[variable.name];
@@ -151,8 +199,16 @@ async function sendOtpImpl(req, res, next) {
           templateData[variable.name] = value.trim();
         }
       }
-    } catch {
-      // Non-mapped appIds fall through to legacy SMS path without template variables.
+      const businessNameOverride = req.body?.businessName;
+      if (typeof businessNameOverride === 'string' && businessNameOverride.trim()) {
+        templateData.businessName = businessNameOverride.trim();
+      }
+    } catch (templateErr) {
+      await otpService.revokeOTP(to, brandId);
+      const message = templateErr instanceof Error
+        ? templateErr.message
+        : 'OTP template configuration error';
+      return validationError(req, res, message);
     }
 
     try {
@@ -160,11 +216,15 @@ async function sendOtpImpl(req, res, next) {
         requestId: req.requestId,
         channel,
         to,
-        subject: 'Your ELVA OTP Code',
+        subject: getOtpEmailSubject({
+          brandName: templateData.brandName,
+          businessName: templateData.businessName,
+          appId,
+        }),
         templateData,
       });
     } catch (smsErr) {
-      await otpService.revokeOTP(to, appId);
+      await otpService.revokeOTP(to, brandId);
       const provider = buildDevProviderError(smsErr);
       return res.status(502).json({
         success: false,
@@ -176,7 +236,7 @@ async function sendOtpImpl(req, res, next) {
     }
 
     if (channel === 'SMS') {
-      await otpCooldownService.applyAfterSuccessfulSend(to, appId);
+      await otpCooldownService.applyAfterSuccessfulSend(to, brandId);
     }
 
     return res.status(200).json({
@@ -207,9 +267,9 @@ async function resendOtp(req, res, next) {
       return;
     }
 
-    const { appId } = req.body;
+    const brandId = req.normalizedBrandId;
     const to = req.notificationTarget;
-    await otpService.revokeOTP(to, appId);
+    await otpService.revokeOTP(to, brandId);
     await sendOtpImpl(req, res, next);
   } catch (err) {
     next(err);
@@ -221,6 +281,10 @@ async function verifyOtp(req, res, next) {
     const appCheck = requireStringField(req.body, 'appId');
     if (!appCheck.ok) {
       return validationError(req, res, appCheck.message);
+    }
+
+    if (!assertBrandIdValid(req, res)) {
+      return;
     }
 
     const otpCheck = requireStringField(req.body, 'otp');
@@ -251,9 +315,17 @@ async function verifyOtp(req, res, next) {
       }
     }
 
-    const { appId, otp } = req.body;
+    try {
+      normalizeAppId(req.body.appId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Invalid app id';
+      return validationError(req, res, message);
+    }
 
-    const result = await otpService.verifyOTP(target, otp, appId, {
+    const { otp } = req.body;
+    const brandId = req.normalizedBrandId;
+
+    const result = await otpService.verifyOTP(target, otp, brandId, {
       requestId: req.requestId,
       channel: email ? 'EMAIL' : 'SMS',
       recipient: target,
