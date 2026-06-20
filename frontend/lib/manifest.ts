@@ -3,6 +3,7 @@ import path from 'path';
 import { DOCS_HOME, getNavFlatItems, slugToSourcePath } from './nav.config';
 import { parseMarkdownFile } from './docs-parser';
 import { MANIFEST_PATH } from './paths';
+import bundledDocsManifest from '../.generated/docs-manifest.json';
 
 export interface ManifestEntry {
   title: string;
@@ -63,9 +64,14 @@ export function writeManifest(manifest: DocsManifest): void {
   fs.writeFileSync(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
 }
 
+/** Bundled at build time (prebuild). fs fallback supports local scripts only. */
 export function readManifest(): DocsManifest {
-  const raw = fs.readFileSync(MANIFEST_PATH, 'utf8');
-  return JSON.parse(raw) as DocsManifest;
+  try {
+    const raw = fs.readFileSync(MANIFEST_PATH, 'utf8');
+    return JSON.parse(raw) as DocsManifest;
+  } catch {
+    return bundledDocsManifest as DocsManifest;
+  }
 }
 
 export function getManifestPage(slug: string): ManifestEntry | undefined {
