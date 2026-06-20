@@ -5,7 +5,7 @@
 | **Purpose** | Entry point for the ELVA Notify Platform v2 documentation. Describes what the platform is, what it can do today, and how to navigate the core documentation set. |
 | **Intended Audience** | New developers, future maintainers, DevOps engineers, ELVA team members, and future business integrators. |
 | **Last Updated** | 2026-06-05 |
-| **Related Documents** | [Architecture Overview](./architecture/overview.md) · [Request Lifecycle](./architecture/request-lifecycle.md) · [DLT Layer](./architecture/dlt-layer.md) · [Authentication](./api/authentication.md) · [OTP API](./api/otp.md) · [Notify API](./api/notify.md) · [Error Codes](./api/error-codes.md) · [eNandi Business](./businesses/enandi.md) |
+| **Related Documents** | [Architecture Overview](./architecture/overview.md) · [Request Lifecycle](./architecture/request-lifecycle.md) · [DLT Layer](./architecture/dlt-layer.md) · [Authentication](./api/authentication.md) · [OTP API](./api/otp.md) · [Notify API](./api/notify.md) · [Error Codes](./api/error-codes.md) · [ApnaKart Templates](./businesses/apnakart.md) |
 
 ---
 
@@ -17,10 +17,10 @@
 - **SMS delivery** — via Fast2SMS (legacy free-text route `q`, and DLT-compliant templated route `dlt`).
 - **Email delivery** — via SendGrid.
 - **Unified notification API** — `POST /notify` for SMS and EMAIL in one contract.
-- **Business modules** — isolated template catalogs (currently **eNandi**) with DLT metadata and variable validation.
+- **Template groups** — shared DLT template catalogs (currently **ApnaKart**) with metadata and variable validation.
 - **Structured logging** — JSON logs with `requestId`, `provider`, `templateId`, and category-based events.
 
-The service is **multi-tenant**: every authenticated request carries `appId` and `apiKey`. OTP storage keys are namespaced as `otp:{appId}:{recipient}` in Redis.
+The service uses **ELVA-issued platform credentials** (`appId` + `apiKey`) plus **per-brand identity** (`brandId`). OTP storage keys are namespaced as `otp:{brandId}:{recipient}` in Redis.
 
 ---
 
@@ -47,7 +47,7 @@ flowchart TB
         MW[Middleware<br/>requestId · rateLimit · auth]
         CTRL[Controllers<br/>otp · notify · health]
         SVC[Services<br/>otp · notification · validation · dlt · logging]
-        BUS[Business Registry<br/>enandi]
+        BUS[Template Registry<br/>apnakart]
         MW --> CTRL --> SVC
         SVC --> BUS
     end
@@ -92,7 +92,7 @@ mindmap
       SendGrid provider
     Business Modules
       Registry pattern
-      enandi templates
+      apnakart templates
       Future businesses
     Logging
       SYSTEM BUSINESS OTP
@@ -106,7 +106,7 @@ mindmap
 | OTP Resend | `POST /otp/resend` | Fast2SMS / SendGrid | Revokes prior OTP, then re-sends |
 | OTP Verify | `POST /otp/verify` | Redis only | Consumes OTP on success |
 | Legacy SMS | `POST /notify` + `message` | Fast2SMS route `q` | Free-text SMS |
-| DLT SMS | `POST /notify` + `business` + `templateKey` | Fast2SMS route `dlt` | eNandi templates only |
+| DLT SMS | `POST /notify` + `templateKey` + `variables` | Fast2SMS route `dlt` | ApnaKart templates (per approved brand) |
 | Email | `POST /notify` + `subject` + `html`/`template` | SendGrid | HTML or simple template |
 | Health | `GET /health` | — | No authentication |
 
@@ -116,7 +116,7 @@ mindmap
 
 | Phase | Focus | Status |
 |-------|-------|--------|
-| **Phase 1** | Business Registry + eNandi module | Complete |
+| **Phase 1** | Template registry + ApnaKart group | Complete |
 | **Phase 2** | Template validation layer on `/notify` | Complete |
 | **Phase 3** | DLT SMS delivery via Fast2SMS | Complete |
 | **Phase 4** | Centralized structured logging (`businessLogger`) | Complete |
@@ -127,19 +127,25 @@ mindmap
 
 ## Documentation Map
 
+### Getting Started
+
+| Document | Description |
+|----------|-------------|
+| [End-to-End Integration Guide](./getting-started/end-to-end-integration-guide.md) | Portal onboarding → credentials → playground → app integration |
+
 ### Architecture
 
 | Document | Description |
 |----------|-------------|
 | [Architecture Overview](./architecture/overview.md) | Components, folder structure, request processing |
 | [Request Lifecycle](./architecture/request-lifecycle.md) | Sequence diagrams for OTP, SMS, DLT, and email flows |
-| [DLT Layer](./architecture/dlt-layer.md) | DLT concepts, eNandi IDs, payload transformation |
+| [DLT Layer](./architecture/dlt-layer.md) | DLT concepts, ApnaKart IDs, payload transformation |
 
 ### API Reference
 
 | Document | Description |
 |----------|-------------|
-| [Authentication](./api/authentication.md) | `appId` / `apiKey` validation |
+| [Authentication](./api/authentication.md) | ELVA-issued `appId` / `apiKey` + `brandId` |
 | [OTP API](./api/otp.md) | Send, resend, verify — **LOGIN_OTP**, **LOGIN_OTP_WITH_ID** |
 | [Notify API](./api/notify.md) | Legacy SMS, DLT template SMS, email — **order templates only** |
 | [Error Codes](./api/error-codes.md) | All API error codes with HTTP status |
@@ -158,7 +164,7 @@ mindmap
 
 | Document | Description |
 |----------|-------------|
-| [eNandi Business](./businesses/enandi.md) | Template catalog, DLT IDs, integration guide |
+| [ApnaKart Templates](./businesses/apnakart.md) | Template catalog, DLT IDs, integration guide |
 
 ### Phase reports
 
@@ -177,11 +183,15 @@ Implementation audits and migration reports live under [`docs/reports/`](./repor
 
 ## Quick Start for Integrators
 
-1. Obtain `appId` and `apiKey` from your ELVA administrator (`APP_CREDENTIALS_JSON` on the server).
-2. Read [Authentication](./api/authentication.md) — credentials go in the **JSON body**, not headers.
-3. For OTP flows, start with [OTP API](./api/otp.md).
-4. For transactional SMS with approved templates, use [Notify API](./api/notify.md) + [eNandi Business](./businesses/enandi.md).
-5. On errors, consult [Error Codes](./api/error-codes.md).
+> **New to ELVA Notify?** Start with the [End-to-End Integration Guide](./getting-started/end-to-end-integration-guide.md) — from landing on [notify.elvatech.in](https://notify.elvatech.in) through onboarding, testing, and production API integration.
+
+1. Submit your brand and templates at [/onboard](/onboard).
+2. Track approval on the status link emailed to you.
+3. After ELVA approves, use the **`appId` and `apiKey` issued to your team** (approval email) plus your **`brandId`** on API calls.
+4. Read [Authentication](./api/authentication.md) — credentials go in the **JSON body**, not headers.
+5. For OTP flows, start with [OTP API](./api/otp.md).
+6. For transactional SMS, use [Notify API](./api/notify.md) + [ApnaKart Templates](./businesses/apnakart.md).
+7. On errors, consult [Error Codes](./api/error-codes.md).
 
 ---
 
@@ -191,7 +201,7 @@ Implementation audits and migration reports live under [`docs/reports/`](./repor
 |---------|--------------|-----|
 | `403 forbidden` on all requests | Wrong `appId`/`apiKey` or missing `APP_CREDENTIALS_JSON` | [Authentication](./api/authentication.md) |
 | `502 sms_failed` on OTP send | `FAST2SMS_API_KEY` missing or provider error | [OTP API](./api/otp.md) |
-| `400 unsupported_business` | Unknown `business` field on `/notify` | [eNandi Business](./businesses/enandi.md) |
+| `400 unsupported_business` | Unknown `business` field on `/notify` | [ApnaKart Templates](./businesses/apnakart.md) |
 | `500 notification_failed` on DLT | Provider rejection or missing DLT metadata | [DLT Layer](./architecture/dlt-layer.md) |
 | `429 rate_limited` | Global or OTP per-phone limits exceeded | [OTP API](./api/otp.md) |
 
@@ -203,4 +213,4 @@ Implementation audits and migration reports live under [`docs/reports/`](./repor
 
 > **Credentials in body.** `appId` and `apiKey` are sent in the request JSON body. Use HTTPS in production.
 
-> **India SMS compliance.** Legacy and OTP SMS may require DLT registration with your telecom provider. DLT template SMS via `/notify` uses approved eNandi template IDs.
+> **India SMS compliance.** DLT template SMS via `/notify` uses approved ApnaKart template IDs. Each brand supplies its own `brandName` in variables or via `brandId`.

@@ -5,7 +5,7 @@
 | **Purpose** | Describe the current ELVA Notify v2 system architecture: components, folder layout, and how requests flow through the service. |
 | **Intended Audience** | New developers, future maintainers, and DevOps engineers onboarding to the codebase. |
 | **Last Updated** | 2026-06-05 |
-| **Related Documents** | [Documentation Portal](../README.md) · [Request Lifecycle](./request-lifecycle.md) · [DLT Layer](./dlt-layer.md) · [Authentication](../api/authentication.md) · [Notify API](../api/notify.md) · [eNandi Business](../businesses/enandi.md) |
+| **Related Documents** | [Documentation Portal](../README.md) · [Request Lifecycle](./request-lifecycle.md) · [DLT Layer](./dlt-layer.md) · [Authentication](../api/authentication.md) · [Notify API](../api/notify.md) · [ApnaKart Templates](../businesses/apnakart.md) |
 
 ---
 
@@ -51,7 +51,7 @@ flowchart LR
 
     subgraph Business
         REG[registry.js]
-        ENANDI[enandi module]
+        APNAKART\[apnakart templates\]
     end
 
     subgraph Providers
@@ -100,7 +100,7 @@ Each module bundles:
 - `templates.js` — Template catalog with variable schemas and per-template DLT IDs
 - `index.js` — Facade exposing `getTemplate()`, `listTemplateKeys()`
 
-Currently registered: **eNandi** (`enandi`).
+Currently registered: **ApnaKart** (`apnakart`).
 
 ### Validation Layer
 
@@ -165,7 +165,7 @@ elva-notify-platform/
 │   │   ├── businesses/
 │   │   │   ├── index.js           # Registry bootstrap
 │   │   │   ├── registry.js        # Business Registry
-│   │   │   └── enandi/
+│   │   │   └── apnakart/
 │   │   │       ├── config.js      # PEID, sender ID
 │   │   │       ├── templates.js   # Template catalog
 │   │   │       └── index.js       # Module facade
@@ -251,7 +251,7 @@ Content-Type: application/json
   "apiKey": "your-secret-key",
   "channel": "SMS",
   "to": ["919876543210"],
-  "business": "enandi",
+  "business": "apnakart",
   "templateKey": "ORDER_PLACED",
   "variables": {
     "orderId": "ORD-2026-001",
@@ -281,7 +281,7 @@ Content-Type: application/json
 | Service won't start | Redis connectivity (`REDIS_URL` or `REDIS_HOST:REDIS_PORT`) |
 | All routes return 429 | Global rate limit (10/min) — check `appId` keying |
 | DLT sends fail silently in logs | Search logs for `provider_response_failed` with `category: DLT` |
-| Template not found | Confirm `business` is `enandi` and `templateKey` matches catalog exactly |
+| Template not found | Confirm your brand is approved and `templateKey` matches the ApnaKart catalog exactly |
 
 ---
 
@@ -289,5 +289,5 @@ Content-Type: application/json
 
 - **New business:** Add `src/businesses/<name>/`, call `registerBusiness()` in `src/businesses/index.js`.
 - **New SMS provider:** Implement provider module, wire through `sms.service.js`.
-- **OTP DLT migration:** Wire OTP send path to use eNandi `LOGIN_OTP` template instead of route `q`.
+- **OTP DLT migration:** OTP send uses ApnaKart `LOGIN_OTP` via brand-scoped `brandId`.
 - **New channels:** Extend `SUPPORTED_CHANNELS` and add handler in `notification.service.js`.

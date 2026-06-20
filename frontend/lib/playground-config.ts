@@ -12,6 +12,14 @@ function jsonSample(value: object): string {
   return JSON.stringify(value, null, 2);
 }
 
+/** Placeholder values — replaced by saved credentials bar on send. */
+const SAMPLE_APP_ID = 'ELVA_NOTIFY';
+const SAMPLE_API_KEY = 'your-issued-api-key';
+const SAMPLE_BRAND_ID = 'elva-sales';
+const SAMPLE_BRAND_NAME = 'ELVA Sales';
+const SAMPLE_PHONE = '919876543210';
+const SAMPLE_EMAIL = 'user@example.com';
+
 export const PLAYGROUND_TABS: PlaygroundTab[] = [
   {
     id: 'sms',
@@ -27,24 +35,41 @@ export const PLAYGROUND_TABS: PlaygroundTab[] = [
             path: '/otp/send',
             title: 'POST /otp/send',
             description:
-              'ELVA generates a 6-digit OTP, stores it securely, and sends it via SMS (DLT when OTP_DLT_ENABLED=true and app mapping has dltEnabled).',
-            sampleJson: jsonSample({ appId: 'your-app-id', apiKey: 'your-secret-key', phone: '919876543210' }),
+              'Generate a 6-digit OTP and send via DLT SMS. Requires approved brandId. SMS branding uses the registry brandName (e.g. ELVA Sales), not appId.',
+            sampleJson: jsonSample({
+              appId: SAMPLE_APP_ID,
+              apiKey: SAMPLE_API_KEY,
+              brandId: SAMPLE_BRAND_ID,
+              phone: SAMPLE_PHONE,
+            }),
           },
           {
             id: 'sms-otp-resend',
             method: 'POST',
             path: '/otp/resend',
             title: 'POST /otp/resend',
-            description: 'Revoke the previous OTP and send a new one to the same phone number.',
-            sampleJson: jsonSample({ appId: 'your-app-id', apiKey: 'your-secret-key', phone: '919876543210' }),
+            description:
+              'Revoke the previous OTP and send a new SMS. Wait 30 seconds after a successful send (cooldown).',
+            sampleJson: jsonSample({
+              appId: SAMPLE_APP_ID,
+              apiKey: SAMPLE_API_KEY,
+              brandId: SAMPLE_BRAND_ID,
+              phone: SAMPLE_PHONE,
+            }),
           },
           {
             id: 'sms-otp-verify',
             method: 'POST',
             path: '/otp/verify',
             title: 'POST /otp/verify',
-            description: 'Verify the OTP the user received.',
-            sampleJson: jsonSample({ appId: 'your-app-id', apiKey: 'your-secret-key', phone: '919876543210', otp: '123456' }),
+            description: 'Verify the OTP from SMS. Use the same brandId and phone as send.',
+            sampleJson: jsonSample({
+              appId: SAMPLE_APP_ID,
+              apiKey: SAMPLE_API_KEY,
+              brandId: SAMPLE_BRAND_ID,
+              phone: SAMPLE_PHONE,
+              otp: '123456',
+            }),
           },
         ],
       },
@@ -57,13 +82,14 @@ export const PLAYGROUND_TABS: PlaygroundTab[] = [
             method: 'POST',
             path: '/notify',
             title: 'POST /notify (legacy SMS)',
-            description: 'Send direct SMS with a free-text message (Fast2SMS route q).',
+            description: 'Send free-text SMS (Fast2SMS route q). Requires approved brandId for SMS.',
             sampleJson: jsonSample({
-              appId: 'your-app-id',
-              apiKey: 'your-secret-key',
+              appId: SAMPLE_APP_ID,
+              apiKey: SAMPLE_API_KEY,
+              brandId: SAMPLE_BRAND_ID,
               channel: 'SMS',
-              to: ['919876543210'],
-              message: 'Your task is approved',
+              to: [SAMPLE_PHONE],
+              message: 'Test legacy SMS from ELVA Notify',
             }),
           },
           {
@@ -71,14 +97,20 @@ export const PLAYGROUND_TABS: PlaygroundTab[] = [
             method: 'POST',
             path: '/notify',
             title: 'POST /notify (DLT template)',
-            description: 'Send DLT templated SMS. Use appId matching a registered business; set templateKey and variables from GET /platform/businesses/:id/templates.',
+            description:
+              'Send DLT templated transactional SMS. Use templateKey from GET /platform/businesses/:id/templates. businessName should match your approved brand display name.',
             sampleJson: jsonSample({
-              appId: 'your-app-id',
-              apiKey: 'your-secret-key',
+              appId: SAMPLE_APP_ID,
+              apiKey: SAMPLE_API_KEY,
+              brandId: SAMPLE_BRAND_ID,
               channel: 'SMS',
-              to: ['919876543210'],
-              templateKey: 'YOUR_TEMPLATE_KEY',
-              variables: { customerName: 'Arun', businessName: 'eNandi', orderId: 'ORD-2026-001' },
+              to: [SAMPLE_PHONE],
+              templateKey: 'ORDER_PLACED',
+              variables: {
+                customerName: 'Arun',
+                businessName: SAMPLE_BRAND_NAME,
+                orderId: 'ORD-2026-001',
+              },
             }),
           },
         ],
@@ -98,16 +130,44 @@ export const PLAYGROUND_TABS: PlaygroundTab[] = [
             method: 'POST',
             path: '/otp/send',
             title: 'POST /otp/send',
-            description: 'ELVA generates an OTP and emails it to the user.',
-            sampleJson: jsonSample({ appId: 'your-app-id', apiKey: 'your-secret-key', channel: 'EMAIL', email: 'user@example.com' }),
+            description:
+              'Generate an OTP and email it. Subject and body use registry brandName (e.g. "Your ELVA Sales OTP Code"). brandId is required.',
+            sampleJson: jsonSample({
+              appId: SAMPLE_APP_ID,
+              apiKey: SAMPLE_API_KEY,
+              brandId: SAMPLE_BRAND_ID,
+              channel: 'EMAIL',
+              email: SAMPLE_EMAIL,
+            }),
+          },
+          {
+            id: 'email-otp-resend',
+            method: 'POST',
+            path: '/otp/resend',
+            title: 'POST /otp/resend',
+            description: 'Resend OTP to the same email address.',
+            sampleJson: jsonSample({
+              appId: SAMPLE_APP_ID,
+              apiKey: SAMPLE_API_KEY,
+              brandId: SAMPLE_BRAND_ID,
+              channel: 'EMAIL',
+              email: SAMPLE_EMAIL,
+            }),
           },
           {
             id: 'email-otp-verify',
             method: 'POST',
             path: '/otp/verify',
             title: 'POST /otp/verify',
-            description: 'Verify the OTP from the email.',
-            sampleJson: jsonSample({ appId: 'your-app-id', apiKey: 'your-secret-key', email: 'user@example.com', otp: '123456' }),
+            description: 'Verify the OTP from email. Use the same brandId and email as send.',
+            sampleJson: jsonSample({
+              appId: SAMPLE_APP_ID,
+              apiKey: SAMPLE_API_KEY,
+              brandId: SAMPLE_BRAND_ID,
+              channel: 'EMAIL',
+              email: SAMPLE_EMAIL,
+              otp: '123456',
+            }),
           },
         ],
       },
@@ -120,14 +180,14 @@ export const PLAYGROUND_TABS: PlaygroundTab[] = [
             method: 'POST',
             path: '/notify',
             title: 'POST /notify (HTML)',
-            description: 'Send EMAIL notification with direct HTML content.',
+            description: 'Send EMAIL with HTML body. brandId is not required for email notify.',
             sampleJson: jsonSample({
-              appId: 'your-app-id',
-              apiKey: 'your-secret-key',
+              appId: SAMPLE_APP_ID,
+              apiKey: SAMPLE_API_KEY,
               channel: 'EMAIL',
-              to: ['user@example.com'],
-              subject: 'Welcome',
-              html: '<h1>Hello</h1>',
+              to: [SAMPLE_EMAIL],
+              subject: 'ELVA Sales test',
+              html: '<p>Hello from notify API</p>',
             }),
           },
         ],

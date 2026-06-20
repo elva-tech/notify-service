@@ -1,5 +1,22 @@
-function getOtpTemplate({ otp, appId, fallbackMessage }) {
-  const tenant = typeof appId === 'string' && appId.trim() ? appId.trim() : 'ELVA';
+function resolveOtpBrandLabel({ brandName, businessName, appId }) {
+  if (typeof brandName === 'string' && brandName.trim()) {
+    return brandName.trim();
+  }
+  if (typeof businessName === 'string' && businessName.trim()) {
+    return businessName.trim();
+  }
+  if (typeof appId === 'string' && appId.trim()) {
+    return appId.trim();
+  }
+  return 'ELVA';
+}
+
+function getOtpEmailSubject({ brandName, businessName, appId }) {
+  return `Your ${resolveOtpBrandLabel({ brandName, businessName, appId })} OTP Code`;
+}
+
+function getOtpTemplate({ otp, brandName, businessName, appId, fallbackMessage }) {
+  const tenant = resolveOtpBrandLabel({ brandName, businessName, appId });
   const code = typeof otp === 'string' && otp.trim() ? otp.trim() : null;
   const message = typeof fallbackMessage === 'string' && fallbackMessage.trim()
     ? fallbackMessage.trim()
@@ -27,4 +44,6 @@ function getOtpTemplate({ otp, appId, fallbackMessage }) {
 
 module.exports = {
   getOtpTemplate,
+  getOtpEmailSubject,
+  resolveOtpBrandLabel,
 };

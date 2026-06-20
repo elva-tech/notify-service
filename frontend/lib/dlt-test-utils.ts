@@ -21,31 +21,34 @@ export function getFormVariables(template: BusinessTemplate): TemplateVariable[]
   return template.variables.filter((variable) => !isServerGeneratedVariable(variable.name));
 }
 
-export function buildDefaultVariableValues(template: BusinessTemplate): Record<string, string> {
+export function buildDefaultVariableValues(
+  template: BusinessTemplate,
+  brandDisplayName = 'ELVA Sales',
+): Record<string, string> {
   const values: Record<string, string> = {};
   for (const variable of template.variables) {
     if (isServerGeneratedVariable(variable.name)) {
       values[variable.name] = '<generated>';
     } else {
-      values[variable.name] = buildExampleVariableValue(variable);
+      values[variable.name] = buildExampleVariableValue(variable, brandDisplayName);
     }
   }
   return values;
 }
 
-function buildExampleVariableValue(variable: TemplateVariable): string {
+function buildExampleVariableValue(variable: TemplateVariable, brandDisplayName: string): string {
   switch (variable.type) {
     case 'numeric':
       return '1'.repeat(variable.length ?? 6);
     default:
-      return buildExampleStringValue(variable.name);
+      return buildExampleStringValue(variable.name, brandDisplayName);
   }
 }
 
-function buildExampleStringValue(name: string): string {
+function buildExampleStringValue(name: string, brandDisplayName: string): string {
   const lower = name.toLowerCase();
   if (lower.includes('customer')) return 'Arun';
-  if (lower.includes('business')) return 'eNandi';
+  if (lower.includes('business')) return brandDisplayName;
   if (lower.includes('order')) return 'ORD-2026-001';
   if (lower.includes('login')) return '7488';
   return 'sample-value';
@@ -123,16 +126,14 @@ export function buildFast2SmsPreview(
 }
 
 export function resolveDeliveryMode(
-  appId: string,
+  brandId: string,
   template: BusinessTemplate,
-  otpMappings: Array<{
-    appId: string;
-    businessId: string;
-    templateKey: string;
-    deliveryMode?: string;
-    legacyRouteEnabled?: boolean;
-    fallbackAllowed?: boolean;
-    dltEnabled?: boolean;
+  brands: Array<{
+    brandId: string;
+    otpPolicy?: {
+      dltEnabled?: boolean;
+      legacyRouteEnabled?: boolean;
+    };
   }> = [],
   globalDltEnabled = false,
 ): string {
@@ -140,19 +141,16 @@ export function resolveDeliveryMode(
     return 'notify_dlt';
   }
 
-  const mapping = otpMappings.find((entry) => entry.appId === appId.trim());
-  if (!mapping) {
+  const brand = brands.find((entry) => entry.brandId === brandId.trim());
+  if (!brand) {
     return 'unknown';
   }
 
-  if (globalDltEnabled && mapping.dltEnabled) {
-    if (!mapping.legacyRouteEnabled && !mapping.fallbackAllowed) {
+  if (globalDltEnabled && brand.otpPolicy?.dltEnabled) {
+    if (!brand.otpPolicy.legacyRouteEnabled) {
       return 'dlt_only';
     }
-    if (mapping.legacyRouteEnabled || mapping.fallbackAllowed) {
-      return 'hybrid';
-    }
-    return mapping.deliveryMode ?? 'dlt';
+    return 'hybrid';
   }
 
   return 'legacy_q';
@@ -164,19 +162,25 @@ export function buildSuiteRequestPayload(
   options: {
     appId: string;
     apiKey: string;
+    brandId: string;
     phone: string;
     variables: Record<string, string>;
+    brandDisplayName?: string;
   },
 ): Record<string, unknown> {
-  const { appId, apiKey, phone, variables } = options;
+  const { appId, apiKey, brandId, phone, variables, brandDisplayName = '' } = options;
 
   if (isOtpTemplate(template)) {
     const body: Record<string, unknown> = {
       appId: appId.trim(),
       apiKey: apiKey.trim(),
+      brandId: brandId.trim(),
       phone: phone.trim(),
     };
     for (const variable of getFormVariables(template)) {
+      if (variable.name === 'businessName') {
+        continue;
+      }
       const value = variables[variable.name]?.trim();
       if (value) {
         body[variable.name] = value;
@@ -187,12 +191,18 @@ export function buildSuiteRequestPayload(
 
   const notifyVariables: Record<string, string> = {};
   for (const variable of getFormVariables(template)) {
-    notifyVariables[variable.name] = variables[variable.name] ?? '';
+    const raw = variables[variable.name] ?? '';
+    if (variable.name === 'businessName' && !raw.trim() && brandDisplayName.trim()) {
+      notifyVariables[variable.name] = brandDisplayName.trim();
+    } else {
+      notifyVariables[variable.name] = raw;
+    }
   }
 
   return {
     appId: appId.trim(),
     apiKey: apiKey.trim(),
+    brandId: brandId.trim(),
     channel: 'SMS',
     to: [phone.trim()],
     templateKey: template.templateKey,

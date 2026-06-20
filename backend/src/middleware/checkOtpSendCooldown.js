@@ -1,6 +1,6 @@
 const redis = require('../services/redis.service');
 const { normalizePhone } = require('../utils/phone');
-const { normalizeAppId } = require('../utils/appId');
+const { normalizeBrandId } = require('../utils/brandId');
 
 function cooldownActiveResponse(req, res) {
   return res.status(429).json({
@@ -12,30 +12,30 @@ function cooldownActiveResponse(req, res) {
 }
 
 /**
- * Blocks /send and /resend when otp:cooldown:{appId}:{phone} exists in Redis.
- * Runs after API key auth; skips when phone/appId cannot be normalized (controller will 400).
+ * Blocks /send and /resend when otp:cooldown:{brandId}:{phone} exists in Redis.
+ * Runs after API key auth; skips when phone/brandId cannot be normalized (controller will 400).
  */
 async function checkOtpSendCooldown(req, res, next) {
   const phone = req.body?.phone;
-  const appId = req.body?.appId;
+  const brandId = req.body?.brandId;
 
-  if (typeof phone !== 'string' || typeof appId !== 'string') {
+  if (typeof phone !== 'string' || typeof brandId !== 'string') {
     next();
     return;
   }
 
   let normalizedPhone;
-  let normalizedAppId;
+  let normalizedBrandId;
   try {
     normalizedPhone = normalizePhone(phone);
-    normalizedAppId = normalizeAppId(appId);
+    normalizedBrandId = normalizeBrandId(brandId);
   } catch {
     next();
     return;
   }
 
   try {
-    const key = redis.otpCooldownKey(normalizedAppId, normalizedPhone);
+    const key = redis.otpCooldownKey(normalizedBrandId, normalizedPhone);
     const active = await redis.existsKey(key);
     if (active) {
       cooldownActiveResponse(req, res);

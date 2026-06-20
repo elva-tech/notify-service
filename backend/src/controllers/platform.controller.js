@@ -4,6 +4,7 @@ const {
   listPlatformTemplates,
   getPlatformTemplate,
   getPlatformOtpMetadata,
+  listPlatformBrands,
 } = require('../services/platformMetadata.service');
 
 function listBusinessesHandler(req, res) {
@@ -78,10 +79,20 @@ function getOtpMetadataHandler(req, res) {
   });
 }
 
+function listBrandsHandler(req, res) {
+  const payload = listPlatformBrands();
+  res.status(200).json({
+    success: true,
+    requestId: req.requestId,
+    ...payload,
+  });
+}
+
 module.exports = {
   listBusinessesHandler,
   getBusinessHandler,
   listTemplatesHandler,
   getTemplateHandler,
   getOtpMetadataHandler,
+  listBrandsHandler,
 };

@@ -5,7 +5,7 @@
 | **Purpose** | Describe OTP delivery architecture, DLT activation (Phase 8B), appId→template mappings, resolver infrastructure, rollout controls, and startup validation. |
 | **Intended Audience** | Developers, operations teams, and platform maintainers managing OTP DLT compliance. |
 | **Last Updated** | 2026-06-05 |
-| **Related Documents** | [DLT Layer](./dlt-layer.md) · [Request Lifecycle](./request-lifecycle.md) · [eNandi Business](../businesses/enandi.md) · [OTP API](../api/otp.md) |
+| **Related Documents** | [DLT Layer](./dlt-layer.md) · [Request Lifecycle](./request-lifecycle.md) · [ApnaKart Templates](../businesses/apnakart.md) · [OTP API](../api/otp.md) |
 
 ---
 
@@ -92,7 +92,7 @@ Set to `true` to allow per-app DLT activation. Default is `false` for safe rollo
 ```json
 {
   "eNandi": {
-    "business": "enandi",
+    "business": "apnakart",
     "templateKey": "LOGIN_OTP",
     "dltEnabled": true,
     "legacyRouteEnabled": false
@@ -152,7 +152,7 @@ Example output for `appId: eNandi`, `otp: 123456`:
 
 ```json
 {
-  "businessId": "enandi",
+  "businessId": "apnakart",
   "templateKey": "LOGIN_OTP",
   "variables": {
     "otp": "123456"
@@ -259,4 +259,4 @@ Health snapshot: `backend/.generated/otp-health-snapshot.json` (generated at sta
 - Runbooks: [Outage](../runbooks/otp-dlt-outage.md) · [Rollback](../runbooks/otp-dlt-rollback.md) · [Rollout](../runbooks/otp-dlt-rollout.md)
 - DLT concepts: [DLT Layer](./dlt-layer.md)
 - OTP HTTP flow: [Request Lifecycle](./request-lifecycle.md) · [OTP API](../api/otp.md)
-- eNandi template catalog: [eNandi Business](../businesses/enandi.md)
+- ApnaKart template catalog: [ApnaKart Templates](../businesses/apnakart.md)

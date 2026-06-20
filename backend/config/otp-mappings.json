@@ -1,12 +1,12 @@
 {
   "eNandi": {
-    "business": "enandi",
+    "business": "apnakart",
     "templateKey": "LOGIN_OTP",
     "dltEnabled": true,
     "legacyRouteEnabled": false
   },
   "CMS": {
-    "business": "enandi",
+    "business": "apnakart",
     "templateKey": "LOGIN_OTP",
     "dltEnabled": true,
     "legacyRouteEnabled": true

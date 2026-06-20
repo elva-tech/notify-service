@@ -24,7 +24,7 @@ const FEATURE_CARDS = [
   {
     icon: Shield,
     title: 'Authentication',
-    text: 'Multi-tenant appId and apiKey authentication for every API call.',
+    text: 'ELVA-issued appId and apiKey plus brandId for your approved integration.',
     href: docsHref('api/authentication'),
   },
   {
@@ -64,6 +64,15 @@ export default function LandingPage() {
             <Link href="/playground" className={cn(buttonVariants({ size: 'lg' }))}>
               Open API playground
               <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link href="/onboard" className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>
+              Request brand access
+            </Link>
+            <Link
+              href={docsHref('getting-started/end-to-end-integration-guide')}
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}
+            >
+              Integration guide
             </Link>
             <Link href={docsHref('')} className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>
               Browse documentation

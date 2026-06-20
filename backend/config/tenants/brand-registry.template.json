@@ -1,0 +1,33 @@
+{
+  "_documentation": "Brand registry — approved tenants for ELVA Notify (JSON-as-DB). Key is brandId (lowercase slug).",
+  "_requiredBrandFields": [
+    "status",
+    "brandName",
+    "businessModule",
+    "templates",
+    "otpPolicy"
+  ],
+  "_statusValues": ["active", "suspended", "pending"],
+  "_example": {
+    "version": 1,
+    "brands": {
+      "puma": {
+        "status": "active",
+        "brandName": "Puma",
+        "businessModule": "apnakart",
+        "templates": {
+          "otp": ["LOGIN_OTP"],
+          "notify": ["ORDER_PLACED", "ORDER_DELIVERED"]
+        },
+        "otpPolicy": {
+          "templateKey": "LOGIN_OTP",
+          "dltEnabled": true,
+          "legacyRouteEnabled": false
+        },
+        "approvedAt": "2026-06-05T00:00:00.000Z"
+      }
+    }
+  },
+  "version": 1,
+  "brands": {}
+}

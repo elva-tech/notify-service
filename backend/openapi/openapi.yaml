@@ -5,8 +5,8 @@ info:
   description: |
     Machine-readable contract for the ELVA Notify Platform backend API.
 
-    **Authentication:** `appId` and `apiKey` are sent in the JSON request body on protected endpoints.
-    See [/docs/api/authentication](/docs/api/authentication) for the narrative guide.
+    **Authentication:** Shared platform `appId` and `apiKey` in the JSON request body on protected endpoints.
+    OTP and SMS notify also require an approved `brandId`. See [/docs/api/authentication](/docs/api/authentication).
 
     **Narrative docs:** [OTP](/docs/api/otp) · [Notify](/docs/api/notify) · [Error Codes](/docs/api/error-codes)
 
@@ -76,7 +76,7 @@ paths:
       description: |
         Generates a 6-digit OTP, stores a salted hash in Redis (TTL 5 minutes), and delivers via SMS or email.
 
-        **Middleware:** `validateAppApiKey` → `checkOtpSendCooldown` (SMS only) → `rateLimitOtpSend` → global rate limit.
+        **Middleware:** `validateAppApiKey` → `validateApprovedBrand` → `checkOtpSendCooldown` (SMS only) → `rateLimitOtpSend` → global rate limit.
 
         **Rate limits (send/resend only):**
         - Global: 10 requests/minute per appId (or apiKey / IP fallback)
@@ -84,9 +84,10 @@ paths:
 
         **Cooldown (SMS only):** Redis key blocks rapid resends after successful SMS send.
 
-        **SMS delivery:** When `OTP_DLT_ENABLED=true` and the app is mapped in `otp-mappings.json`
-        with `dltEnabled: true`, OTP SMS uses Fast2SMS `route=dlt` (e.g. eNandi `LOGIN_OTP`).
-        Otherwise OTP uses Fast2SMS `route=q` (legacy free-text).
+        **SMS delivery:** When `OTP_DLT_ENABLED=true` and the brand has `otpPolicy.dltEnabled: true`
+        in `brand-registry.json`, OTP SMS uses Fast2SMS `route=dlt` (e.g. `LOGIN_OTP` with registry `brandName`).
+
+        **brandId** is required on all OTP endpoints. OTP hashes in Redis are scoped per `brandId` + recipient.
 
         **OTP templates (`LOGIN_OTP`, `LOGIN_OTP_WITH_ID`):** Use this endpoint only — not `POST /notify`.
 
@@ -103,23 +104,26 @@ paths:
                 - $ref: './components/schemas.yaml#/OtpSendEmailRequest'
             examples:
               sms:
-                summary: SMS (default channel) — eNandi LOGIN_OTP via DLT
+                summary: SMS (default channel) — ApnaKart LOGIN_OTP via DLT
                 value:
-                  appId: eNandi
-                  apiKey: your-secret-key
+                  appId: ELVA_NOTIFY
+                  apiKey: shared-platform-api-key
+                  brandId: enandi
                   phone: '918660397320'
               smsWithLoginId:
                 summary: SMS — LOGIN_OTP_WITH_ID (optional loginId)
                 value:
-                  appId: eNandi
-                  apiKey: your-secret-key
+                  appId: ELVA_NOTIFY
+                  apiKey: shared-platform-api-key
+                  brandId: enandi
                   phone: '918660397320'
                   loginId: user_7488
               email:
                 summary: EMAIL channel
                 value:
-                  appId: enandi-app
-                  apiKey: your-secret-key
+                  appId: ELVA_NOTIFY
+                  apiKey: shared-platform-api-key
+                  brandId: enandi
                   channel: EMAIL
                   email: user@example.com
       responses:
@@ -199,8 +203,9 @@ paths:
               sms:
                 summary: Resend via SMS
                 value:
-                  appId: enandi-app
-                  apiKey: your-secret-key
+                  appId: ELVA_NOTIFY
+                  apiKey: shared-platform-api-key
+                  brandId: enandi
                   phone: '919876543210'
       responses:
         '200':
@@ -277,15 +282,17 @@ paths:
               sms:
                 summary: Verify SMS OTP
                 value:
-                  appId: enandi-app
-                  apiKey: your-secret-key
+                  appId: ELVA_NOTIFY
+                  apiKey: shared-platform-api-key
+                  brandId: enandi
                   phone: '919876543210'
                   otp: '123456'
               email:
                 summary: Verify email OTP
                 value:
-                  appId: enandi-app
-                  apiKey: your-secret-key
+                  appId: ELVA_NOTIFY
+                  apiKey: shared-platform-api-key
+                  brandId: enandi
                   email: user@example.com
                   otp: '123456'
       responses:
@@ -373,7 +380,11 @@ paths:
 
         **Transactional templates on `/notify`:** `ORDER_PLACED`, `ORDER_DELIVERED`, `OUT_FOR_DELIVERY`.
 
-        See [/docs/api/notify](/docs/api/notify) and [/docs/businesses/enandi](/docs/businesses/enandi).
+        **SMS brand gate:** `brandId` or `variables.businessName` must resolve to an **active** brand in
+        `brand-registry.json`. Unknown or unapproved brands return **403** `brand_not_approved`.
+        Templates not enabled for the brand return **403** `template_not_allowed`. EMAIL is not brand-gated.
+
+        See [/docs/api/notify](/docs/api/notify) and [/docs/businesses/apnakart](/docs/businesses/apnakart).
       x-elva-auth:
         required: true
       requestBody:
@@ -390,8 +401,9 @@ paths:
               legacySms:
                 summary: Legacy SMS
                 value:
-                  appId: enandi-app
-                  apiKey: your-secret-key
+                  appId: ELVA_NOTIFY
+                  apiKey: shared-platform-api-key
+                  brandId: enandi
                   channel: SMS
                   to: ['919876543210']
                   message: Your refund of Rs. 500 has been processed.
@@ -399,7 +411,7 @@ paths:
                 summary: DLT template SMS — ORDER_PLACED
                 value:
                   appId: eNandi
-                  apiKey: your-secret-key
+                  apiKey: shared-platform-api-key
                   channel: SMS
                   to: ['918660397320']
                   templateKey: ORDER_PLACED
@@ -411,7 +423,7 @@ paths:
                 summary: LOGIN_OTP via notify (rejected — use OTP API)
                 value:
                   appId: eNandi
-                  apiKey: your-secret-key
+                  apiKey: shared-platform-api-key
                   channel: SMS
                   to: ['918660397320']
                   templateKey: LOGIN_OTP
@@ -421,8 +433,9 @@ paths:
               emailHtml:
                 summary: Email HTML
                 value:
-                  appId: enandi-app
-                  apiKey: your-secret-key
+                  appId: ELVA_NOTIFY
+                  apiKey: shared-platform-api-key
+                  brandId: enandi
                   channel: EMAIL
                   to: [user@example.com]
                   subject: Welcome to eNandi
@@ -473,7 +486,7 @@ paths:
       x-related-docs:
         - title: Notify API
           href: /docs/api/notify
-        - title: eNandi Business
-          href: /docs/businesses/enandi
+        - title: ApnaKart Templates
+          href: /docs/businesses/apnakart
         - title: Error Codes
           href: /docs/api/error-codes

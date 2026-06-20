@@ -2,42 +2,65 @@
 
 | | |
 |---|---|
-| **Purpose** | Document how ELVA Notify authenticates API requests using `appId` and `apiKey` in the JSON request body. |
-| **Intended Audience** | Client developers, integrators, and ELVA team members configuring application credentials. |
-| **Last Updated** | 2026-06-05 |
-| **Related Documents** | [Documentation Portal](../README.md) · [OTP API](./otp.md) · [Notify API](./notify.md) · [Error Codes](./error-codes.md) · [Architecture Overview](../architecture/overview.md) |
+| **Purpose** | Document platform authentication (`appId` + `apiKey`) and per-brand identity (`brandId`) for ELVA Notify. |
+| **Intended Audience** | Client developers, integrators, and ELVA ops configuring the platform. |
+| **Last Updated** | 2026-06-17 |
+| **Related Documents** | [OTP API](./otp.md) · [Notify API](./notify.md) · [Error Codes](./error-codes.md) · [Business onboarding runbook](../runbooks/business-onboarding.md) · [Architecture Overview](../architecture/overview.md) |
 
 ---
 
 ## Concepts
 
-ELVA Notify uses **application-level authentication**. Every protected endpoint requires two fields in the **JSON request body**:
+ELVA Notify uses **two layers** on every protected API call:
+
+| Layer | Fields | Who provides it |
+|-------|--------|-----------------|
+| **Platform auth** | `appId`, `apiKey` | **ELVA team** — issued after your onboarding request and templates are approved |
+| **Brand identity** | `brandId` (OTP; optional on notify SMS) | Your team — requested at [/onboard](/onboard) and activated on approval |
+
+Credentials are **not** sent via `Authorization` headers. The middleware `validateAppApiKey` runs before OTP and Notify controllers. Approved-brand checks run via `validateApprovedBrand` (see [OTP](./otp.md) and [Notify](./notify.md)).
+
+### Platform credentials (`appId` + `apiKey`)
+
+After ELVA approves your brand and requested templates, the **ELVA team issues** an `appId` and `apiKey` for API access. These credentials are tied to your approved integration — you receive them by email when your request is approved.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `appId` | string | Application identifier; also used as OTP tenant key in Redis |
-| `apiKey` | string | Secret key paired with `appId` |
+| `appId` | string | Platform application ID issued by ELVA (e.g. `ELVA_NOTIFY`) |
+| `apiKey` | string | API key paired with your issued `appId` |
 
-Credentials are **not** sent via `Authorization` headers. The middleware `validateAppApiKey` runs before OTP and Notify controllers.
-
-Server-side credentials are loaded at startup from `APP_CREDENTIALS_JSON`:
+Server-side, valid pairs are configured in `APP_CREDENTIALS_JSON`:
 
 ```json
-{"enandi-app": "your-secret-key", "other-app": "another-secret"}
+{"ELVA_NOTIFY": "your-issued-api-key"}
 ```
 
 Implementation: `src/config/allowedApps.js`, `src/middleware/validateAppApiKey.js`.
+
+> **Integrators:** Do not generate your own `appId` or `apiKey`. Submit [/onboard](/onboard), wait for ELVA approval, and use the credentials sent to your work email.
+
+### Brand identity (`brandId`)
+
+| Field | Type | Required on | Description |
+|-------|------|-------------|-------------|
+| `brandId` | string | `POST /otp/*` | Approved brand slug (e.g. `enandi`, `cms`, `puma`) |
+| `brandId` or `variables.businessName` | string | `POST /notify` (SMS) | Resolves the tenant brand for DLT templates and SMS text |
+
+- List active brands: `GET /platform/brands`
+- Request a new brand: [/onboard](/onboard)
+- OTP Redis keys are scoped per **`brandId`** + recipient: `otp:{brandId}:{phone}`
 
 ### Protected vs Unprotected Endpoints
 
 | Endpoint | Authentication |
 |----------|----------------|
 | `GET /health` | Not required |
-| `GET /` | Not required |
-| `POST /otp/send` | Required |
-| `POST /otp/resend` | Required |
-| `POST /otp/verify` | Required |
-| `POST /notify` | Required |
+| `GET /integrations/catalog` | Not required |
+| `POST /integrations/requests` | Not required |
+| `POST /otp/send` | Required + approved `brandId` |
+| `POST /otp/resend` | Required + approved `brandId` |
+| `POST /otp/verify` | Required + approved `brandId` |
+| `POST /notify` | Required; SMS also requires approved brand |
 
 ---
 
@@ -47,29 +70,22 @@ Implementation: `src/config/allowedApps.js`, `src/middleware/validateAppApiKey.j
 sequenceDiagram
     participant Client
     participant MW as validateAppApiKey
+    participant Brand as validateApprovedBrand
     participant Apps as allowedApps
     participant Ctrl as Controller
 
     Client->>MW: POST with JSON body
-    MW->>MW: appId present and non-empty string?
-    alt Missing appId
+    MW->>MW: appId + apiKey present?
+    alt Missing credentials
         MW-->>Client: 401 unauthorized
     end
-    MW->>MW: apiKey present and non-empty string?
-    alt Missing apiKey
-        MW-->>Client: 401 unauthorized
-    end
-    MW->>MW: normalizeAppId(appId)
-    alt Invalid appId format
+    MW->>Apps: Validate issued platform credential
+    alt Invalid appId or apiKey
         MW-->>Client: 403 forbidden
     end
-    MW->>Apps: Lookup allowedApps[appId]
-    alt Unknown appId
-        MW-->>Client: 403 forbidden
-    end
-    MW->>MW: apiKey === expected?
-    alt Wrong apiKey
-        MW-->>Client: 403 forbidden
+    MW->>Brand: brandId / businessName gate
+    alt Brand not approved
+        Brand-->>Client: 403 brand_not_approved
     end
     MW->>Ctrl: next()
     Ctrl-->>Client: Business response
@@ -77,46 +93,18 @@ sequenceDiagram
 
 ---
 
-## Validation Decision Flow
-
-```mermaid
-flowchart TD
-    START[Request arrives] --> A{appId exists<br/>and is non-empty string?}
-    A -->|No| U1[401 unauthorized<br/>appId is required]
-    A -->|Yes| B{apiKey exists<br/>and is non-empty string?}
-    B -->|No| U2[401 unauthorized<br/>API key is required]
-    B -->|Yes| C{normalizeAppId OK?}
-    C -->|No| F1[403 forbidden<br/>Invalid app credentials]
-    C -->|Yes| D{appId in allowedApps?}
-    D -->|No| F2[403 forbidden]
-    D -->|Yes| E{apiKey matches?}
-    E -->|No| F3[403 forbidden]
-    E -->|Yes| OK[Proceed to controller]
-```
-
----
-
-## appId Rules
-
-From `src/utils/appId.js`:
-
-- Must be a non-empty string after trim
-- Must not contain `:` (colon) — reserved for Redis key structure
-- Normalized to trimmed value for lookup and OTP storage
-
-The `appId` in the request body determines the Redis namespace: `otp:{appId}:{recipient}`.
-
----
-
-## Real Request Example (valid)
+## Real Request Example (OTP)
 
 ```json
 {
-  "appId": "enandi-app",
-  "apiKey": "your-secret-key",
+  "appId": "ELVA_NOTIFY",
+  "apiKey": "your-issued-api-key",
+  "brandId": "enandi",
   "phone": "919876543210"
 }
 ```
+
+Use your ELVA-issued `appId` and `apiKey` together with your approved `brandId`.
 
 ## Real Response Example (missing apiKey)
 
@@ -129,7 +117,7 @@ The `appId` in the request body determines the Redis namespace: `otp:{appId}:{re
 }
 ```
 
-## Real Response Example (wrong key)
+## Real Response Example (wrong credentials)
 
 ```json
 {
@@ -148,22 +136,33 @@ The `appId` in the request body determines the Redis namespace: `otp:{appId}:{re
 curl -X POST {{API_BASE_URL}}/otp/send \
   -H "Content-Type: application/json" \
   -d '{
-    "appId": "enandi-app",
-    "apiKey": "your-secret-key",
+    "appId": "ELVA_NOTIFY",
+    "apiKey": "your-issued-api-key",
+    "brandId": "enandi",
     "phone": "919876543210"
   }'
 ```
 
 ---
 
+## Onboarding a new brand
+
+1. Integrator submits [/onboard](/onboard) with desired `brandId`, templates, and contact details.
+2. ELVA reviews the request. You receive a confirmation email with a **status page link**.
+3. ELVA ops approves at [/platform/approvals](/platform/approvals).
+4. ELVA emails your **`appId`**, **`apiKey`**, and confirmed **`brandId`** based on approved templates.
+5. Integrate using those credentials on OTP and notify API calls.
+
+---
+
 ## Global Rate Limiting (post-auth context)
 
-After authentication, all routes pass through a global rate limiter (`src/middleware/rateLimiter.js`):
+After authentication, protected routes pass through a global rate limiter (`src/middleware/rateLimiter.js`):
 
-- **10 requests per minute** per `appId` (or `apiKey` / client IP fallback)
+- **10 requests per minute** per `appId` (or client IP fallback)
 - Exceeded limit returns **429** `rate_limited`
 
-This is separate from OTP-specific per-phone limits documented in [OTP API](./otp.md).
+Onboarding and platform metadata routes are excluded. OTP has additional per-phone limits — see [OTP API](./otp.md).
 
 ---
 
@@ -172,21 +171,21 @@ This is separate from OTP-specific per-phone limits documented in [OTP API](./ot
 | Symptom | Cause | Resolution |
 |---------|-------|------------|
 | `401 unauthorized` | Missing or empty `appId`/`apiKey` | Include both fields in JSON body |
-| `403 forbidden` with valid-looking credentials | `appId` not in `APP_CREDENTIALS_JSON` | Add entry to server env and restart |
-| `403 forbidden` after credential rotation | Stale `apiKey` on client | Update client config |
-| `403 forbidden` with special chars in appId | `normalizeAppId` rejected (e.g. contains `:`) | Use alphanumeric app IDs |
-| Works locally, fails in production | Different `APP_CREDENTIALS_JSON` per environment | Verify deployment env vars |
-| `429 rate_limited` before auth error | Global limit keyed by IP when body empty | Ensure body is parsed; send `appId` |
+| `403 forbidden` `Invalid app credentials` | Wrong or unissued `appId`/`apiKey` | Use credentials from your ELVA approval email |
+| `403 brand_not_approved` | `brandId` not active in registry | Complete [/onboard](/onboard) or wait for approval |
+| `400 brand_id_required` | Missing `brandId` on OTP | Add `brandId` on send, resend, and verify |
+| Works locally, fails in production | Stale server env after `.env` change | Restart backend so `APP_CREDENTIALS_JSON` reloads |
+| `429 rate_limited` | Global or OTP per-phone limits | Wait and retry |
 
 ---
 
 ## Warnings
 
-> **Always use HTTPS in production.** Credentials in JSON body are visible on the wire without TLS.
+> **Always use HTTPS in production.** Credentials in the JSON body are visible on the wire without TLS.
 
 > **Do not commit `APP_CREDENTIALS_JSON` to source control.** Configure via deployment secrets.
 
-> **Each `appId` is an OTP tenant.** Using the same `appId` across unrelated products shares OTP state.
+> **Do not confuse `appId` with `brandId`.** `appId` + `apiKey` authenticate your integration; `brandId` selects which approved brand (SMS text, DLT templates, OTP scope) applies to the call.
 
 ---
 
@@ -194,6 +193,8 @@ This is separate from OTP-specific per-phone limits documented in [OTP API](./ot
 
 | Environment Variable | Required | Description |
 |---------------------|----------|-------------|
-| `APP_CREDENTIALS_JSON` | Yes (for auth to work) | JSON map of `appId` → `apiKey` |
+| `APP_CREDENTIALS_JSON` | Yes (for auth to work) | Server map of valid `appId` → `apiKey` pairs |
+| `INTEGRATION_APP_ID` | No | `appId` included in approval emails (default: `ELVA_NOTIFY`) |
+| `OPS_ADMIN_TOKEN` | For approvals portal | Ops-only; not used by integrators |
 
 If `APP_CREDENTIALS_JSON` is empty or unset, `allowedApps` is an empty object and **all** authenticated requests return `403 forbidden`.

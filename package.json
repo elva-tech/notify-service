@@ -14,6 +14,7 @@
     "otp:health": "node backend/scripts/generate-otp-health-snapshot.mjs",
     "business:health": "node backend/scripts/generate-business-health-snapshot.mjs",
     "validate:businesses": "node backend/scripts/validate-business-configs.mjs",
+    "validate:brand-registry": "node backend/scripts/validate-brand-registry.mjs",
     "validate:enandi-dlt": "node backend/scripts/validate-enandi-notify-local.mjs",
     "test:enandi-dlt-live": "node backend/scripts/live-enandi-dlt-test.mjs",
     "backend:dev": "npm --prefix backend run dev",

@@ -24,7 +24,7 @@ async function main() {
       variablesValues: '123456',
       entityId: ENTITY_ID,
       logContext: {
-        business: 'enandi',
+        business: 'apnakart',
         templateKey: 'LOGIN_OTP',
         templateId: LOGIN_OTP_TEMPLATE_ID,
         requestId: 'verify-phase-9b',

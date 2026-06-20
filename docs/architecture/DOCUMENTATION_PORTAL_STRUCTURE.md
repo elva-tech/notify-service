@@ -31,7 +31,7 @@ Leaf pages:
 /docs/introduction
 /docs/getting-started
 /docs/api-reference
-/docs/businesses/enandi
+/docs/businesses/apnakart
 /docs/templates
 /docs/errors
 /docs/faq
@@ -64,8 +64,8 @@ Includes:
 - Error codes and conditions
 - Backward compatibility notes (Phase 1 migration scope)
 
-### `/docs/businesses/enandi`
-Purpose: eNandi business contract details.
+### `/docs/businesses/apnakart`
+Purpose: ApnaKart Templates contract details.
 
 Includes:
 - Approved templateKeys for eNandi
@@ -124,7 +124,7 @@ Within “Businesses”, sub-navigation is business-scoped:
 
 “Templates” should be accessible both globally and business-scoped via cross-links:
 
-- eNandi business contract references relevant template schemas.
+- ApnaKart Templates contract references relevant template schemas.
 
 *** End of File
 

@@ -21,21 +21,37 @@ interface ApiEndpointTesterProps {
   endpoint: PlaygroundEndpoint;
   appId: string;
   apiKey: string;
+  brandId: string;
   onRequestComplete?: (item: RequestHistoryItem) => void;
 }
 
-function mergeCredentials(body: string, appId: string, apiKey: string) {
+function mergeCredentials(body: string, appId: string, apiKey: string, brandId: string, path: string) {
   try {
     const parsed = JSON.parse(body) as Record<string, unknown>;
     if (appId.trim()) parsed.appId = appId.trim();
     if (apiKey.trim()) parsed.apiKey = apiKey.trim();
+
+    if (!brandId.trim()) {
+      return JSON.stringify(parsed, null, 2);
+    }
+
+    const normalizedBrandId = brandId.trim();
+    if (path.startsWith('/otp')) {
+      parsed.brandId = normalizedBrandId;
+    } else if (path.startsWith('/notify')) {
+      const channel = typeof parsed.channel === 'string' ? parsed.channel.trim().toUpperCase() : 'SMS';
+      if (channel !== 'EMAIL') {
+        parsed.brandId = normalizedBrandId;
+      }
+    }
+
     return JSON.stringify(parsed, null, 2);
   } catch {
     return body;
   }
 }
 
-export function ApiEndpointTester({ endpoint, appId, apiKey, onRequestComplete }: ApiEndpointTesterProps) {
+export function ApiEndpointTester({ endpoint, appId, apiKey, brandId, onRequestComplete }: ApiEndpointTesterProps) {
   const [body, setBody] = useState(endpoint.sampleJson);
   const [response, setResponse] = useState('');
   const [status, setStatus] = useState<number | null>(null);
@@ -44,7 +60,10 @@ export function ApiEndpointTester({ endpoint, appId, apiKey, onRequestComplete }
   const [copied, setCopied] = useState<'json' | 'curl' | null>(null);
 
   const baseUrl = API_BASE_URL;
-  const effectiveBody = useMemo(() => mergeCredentials(body, appId, apiKey), [body, appId, apiKey]);
+  const effectiveBody = useMemo(
+    () => mergeCredentials(body, appId, apiKey, brandId, endpoint.path),
+    [body, appId, apiKey, brandId, endpoint.path],
+  );
   const curl = useMemo(() => buildCurlCommand(baseUrl, endpoint.path, effectiveBody), [baseUrl, endpoint.path, effectiveBody]);
 
   useEffect(() => {
@@ -148,7 +167,7 @@ export function ApiEndpointTester({ endpoint, appId, apiKey, onRequestComplete }
         <div className="rounded-xl border bg-card shadow-sm">
           <div className="border-b px-4 py-3">
             <h4 className="text-sm font-semibold">Request body</h4>
-            <p className="text-xs text-muted-foreground">Credentials from the bar above are merged on send.</p>
+            <p className="text-xs text-muted-foreground">Credentials from the bar above are merged on send (appId, apiKey, brandId for OTP and SMS notify).</p>
           </div>
           <textarea
             className="min-h-[280px] w-full resize-y bg-transparent p-4 font-mono text-sm text-foreground outline-none"

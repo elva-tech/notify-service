@@ -64,20 +64,21 @@ async function disconnectRedis() {
 }
 
 /**
- * @param {string} normalizedAppId
- * @param {string} normalizedPhone
+ * OTP storage key — scoped by brand + recipient (shared platform appId does not partition OTPs).
+ * @param {string} normalizedBrandId
+ * @param {string} normalizedRecipient
  */
-function otpKey(normalizedAppId, normalizedPhone) {
-  return `${OTP_KEY_PREFIX}${normalizedAppId}:${normalizedPhone}`;
+function otpKey(normalizedBrandId, normalizedRecipient) {
+  return `${OTP_KEY_PREFIX}${normalizedBrandId}:${normalizedRecipient}`;
 }
 
 /**
- * Per app + phone send cooldown (short TTL between SMS sends).
- * @param {string} normalizedAppId
+ * Per brand + phone send cooldown (short TTL between SMS sends).
+ * @param {string} normalizedBrandId
  * @param {string} normalizedPhone
  */
-function otpCooldownKey(normalizedAppId, normalizedPhone) {
-  return `${OTP_KEY_PREFIX}cooldown:${normalizedAppId}:${normalizedPhone}`;
+function otpCooldownKey(normalizedBrandId, normalizedPhone) {
+  return `${OTP_KEY_PREFIX}cooldown:${normalizedBrandId}:${normalizedPhone}`;
 }
 
 /**

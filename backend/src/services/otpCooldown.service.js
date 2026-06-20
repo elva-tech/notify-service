@@ -1,16 +1,16 @@
 const redis = require('./redis.service');
 const { normalizePhone } = require('../utils/phone');
-const { normalizeAppId } = require('../utils/appId');
+const { normalizeBrandId } = require('../utils/brandId');
 
 const COOLDOWN_TTL_SECONDS = 30;
 
 /**
  * Sets send cooldown after SMS succeeded (send + resend).
  * @param {string} phone
- * @param {string} appId
+ * @param {string} brandId
  */
-async function applyAfterSuccessfulSend(phone, appId) {
-  const key = redis.otpCooldownKey(normalizeAppId(appId), normalizePhone(phone));
+async function applyAfterSuccessfulSend(phone, brandId) {
+  const key = redis.otpCooldownKey(normalizeBrandId(brandId), normalizePhone(phone));
   await redis.setKeyWithExpire(key, COOLDOWN_TTL_SECONDS);
 }
 

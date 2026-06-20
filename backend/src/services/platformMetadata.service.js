@@ -12,6 +12,7 @@ const {
   readOtpHealthSnapshot,
 } = require('./otpHealthSnapshot.service');
 const { loadOtpMappingsFile } = require('./otpMappingValidator.service');
+const { listBrands } = require('./brandRegistry.service');
 
 const BUSINESS_HEALTH_SNAPSHOT_PATH = path.join(
   __dirname,
@@ -38,7 +39,7 @@ function buildExampleVariableValue(variable) {
         return 'Arun';
       }
       if (variable.name.toLowerCase().includes('business')) {
-        return 'eNandi';
+        return 'ELVA Sales';
       }
       if (variable.name.toLowerCase().includes('order')) {
         return 'ORD-2026-001';
@@ -420,12 +421,42 @@ function getPlatformOtpMetadata() {
   };
 }
 
+function listPlatformBrands() {
+  const brands = listBrands().map((brand) => ({
+    brandId: brand.brandId,
+    status: brand.status,
+    brandName: brand.brandName,
+    businessModule: brand.businessModule,
+    templates: brand.templates,
+    otpPolicy: brand.otpPolicy,
+    approvedAt: brand.approvedAt,
+    searchText: buildSearchText([
+      brand.brandId,
+      brand.brandName,
+      brand.businessModule,
+      brand.status,
+      ...brand.templates.otp,
+      ...brand.templates.notify,
+    ]),
+  }));
+
+  return {
+    generatedAt: new Date().toISOString(),
+    stats: {
+      brandCount: brands.length,
+      activeCount: brands.filter((brand) => brand.status === 'active').length,
+    },
+    brands,
+  };
+}
+
 module.exports = {
   listPlatformBusinesses,
   getPlatformBusiness,
   listPlatformTemplates,
   getPlatformTemplate,
   getPlatformOtpMetadata,
+  listPlatformBrands,
   inferDeliveryType,
   serializeTemplate,
 };

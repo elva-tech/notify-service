@@ -11,5 +11,6 @@ router.get(
   platformController.getTemplateHandler,
 );
 router.get('/platform/otp', platformController.getOtpMetadataHandler);
+router.get('/platform/brands', platformController.listBrandsHandler);
 
 module.exports = router;

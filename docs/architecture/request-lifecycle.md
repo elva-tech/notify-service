@@ -291,12 +291,12 @@ sequenceDiagram
     Auth->>Ctrl: handleNotify
     Ctrl->>Ctrl: classifyNotifySmsMode → template
     Ctrl->>TV: validateTemplateRequest
-    TV->>Reg: getBusiness(enandi)
+    TV->>Reg: getBusiness(apnakart)
     alt Unknown business
         TV-->>Ctrl: unsupported_business
         Ctrl-->>Client: 400
     end
-    TV->>Reg: getTemplate(enandi, templateKey)
+    TV->>Reg: getTemplate(apnakart, templateKey)
     alt Unknown template
         TV-->>Ctrl: invalid_template
         Ctrl-->>Client: 400
@@ -329,7 +329,7 @@ sequenceDiagram
   "apiKey": "your-secret-key",
   "channel": "SMS",
   "to": ["919876543210"],
-  "business": "enandi",
+  "business": "apnakart",
   "templateKey": "OUT_FOR_DELIVERY",
   "variables": {
     "orderId": "ORD-2026-001",
@@ -429,7 +429,7 @@ sequenceDiagram
 |---------|-----------------|--------|
 | `cooldown_active` immediately after send | OTP send | Wait for cooldown key expiry in Redis |
 | OTP sent but not received | Provider step | Check Fast2SMS logs (`provider_response_failed`) |
-| DLT 400 before send | Validation | Fix `variables` format — see [eNandi](../businesses/enandi.md) |
+| DLT 400 before send | Validation | Fix `variables` format — see [ApnaKart Templates](../businesses/apnakart.md) |
 | `notification_failed` with DLT | Fast2SMS DLT route | Verify template ID and PEID are approved |
 | Email 500 | SendGrid step | Confirm `SENDGRID_API_KEY` and `EMAIL_FROM` |
 

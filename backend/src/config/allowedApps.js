@@ -38,6 +38,31 @@ function loadAllowedApps() {
 
 const allowedApps = loadAllowedApps();
 
+/**
+ * Platform credentials included in approval emails.
+ * Prefers INTEGRATION_APP_ID, then ELVA_NOTIFY, then first entry in APP_CREDENTIALS_JSON.
+ * @returns {{ appId: string, apiKey: string } | null}
+ */
+function getPlatformCredentials() {
+  const preferred = process.env.INTEGRATION_APP_ID?.trim();
+  if (preferred && allowedApps[preferred]) {
+    return { appId: preferred, apiKey: allowedApps[preferred] };
+  }
+
+  if (allowedApps.ELVA_NOTIFY) {
+    return { appId: 'ELVA_NOTIFY', apiKey: allowedApps.ELVA_NOTIFY };
+  }
+
+  const appIds = Object.keys(allowedApps);
+  if (appIds.length === 0) {
+    return null;
+  }
+
+  const appId = appIds[0];
+  return { appId, apiKey: allowedApps[appId] };
+}
+
 module.exports = {
   allowedApps,
+  getPlatformCredentials,
 };

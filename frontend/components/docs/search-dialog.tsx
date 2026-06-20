@@ -90,6 +90,11 @@ export function SearchDialog({
           versionCount: 0,
         },
         businesses: [],
+        brands: {
+          generatedAt: '',
+          stats: { brandCount: 0, activeCount: 0 },
+          brands: [],
+        },
         otpMappings: {
           runtime: { globalDltEnabled: false },
           stats: {

@@ -38,8 +38,8 @@ Example:
 
 ```json
 {
-  "businessId": "enandi",
-  "displayName": "eNandi",
+  "businessId": "apnakart",
+  "displayName": "ApnaKart",
   "version": "v1",
   "dlt": {
     "entityId": "1201177860312735154",

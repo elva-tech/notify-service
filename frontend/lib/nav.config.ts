@@ -14,6 +14,12 @@ export interface NavSection {
 /** Sidebar navigation — keep in sync with scripts/generate-manifest.mjs NAV_ITEMS */
 export const NAV_SECTIONS: NavSection[] = [
   {
+    title: 'Getting Started',
+    items: [
+      { title: 'End-to-End Integration Guide', slug: 'getting-started/end-to-end-integration-guide' },
+    ],
+  },
+  {
     title: 'Architecture',
     items: [
       { title: 'Overview', slug: 'architecture/overview' },
@@ -40,6 +46,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: 'Businesses',
     items: [
       { title: 'Business Portal', slug: null, href: '/platform/businesses' },
+      { title: 'ApnaKart Templates', slug: 'businesses/apnakart' },
       { title: 'Onboarding Guide', slug: 'businesses/onboarding-guide' },
       { title: 'Configuration Reference', slug: 'businesses/configuration-reference' },
       { title: 'Validation Rules', slug: 'businesses/validation-rules' },

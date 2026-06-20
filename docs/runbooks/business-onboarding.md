@@ -9,15 +9,40 @@
 
 ---
 
-## Prerequisites
+## Brand onboarding (developer requests)
 
-- DLT entity ID and sender ID approved
-- DLT template IDs registered for each template
-- `businessId` chosen per naming standards
+Developers submit brand access via the portal; ops approves in the platform UI.
+
+| Step | Who | Action |
+|------|-----|--------|
+| 1 | Developer | Open `/onboard`, choose templates, submit request |
+| 2 | System | Emails requester (status link) and `ADMIN_NOTIFY_EMAIL` |
+| 3 | Ops | Open `/platform/approvals`, enter `OPS_ADMIN_TOKEN`, approve or reject |
+| 4 | System | On approve: upserts active brand in `brand-registry.json`; emails requester |
+| 5 | Developer | ELVA emails `appId`, `apiKey`, and `brandId` after approval |
+
+### Required env
+
+```env
+ADMIN_NOTIFY_EMAIL=ops@elvatech.in
+OPS_ADMIN_TOKEN=<secret>
+PLATFORM_PUBLIC_URL=https://notify.elvatech.in
+SENDGRID_API_KEY=<key>
+EMAIL_FROM=noreply@elvatech.in
+```
+
+### Verify after approval
+
+```bash
+curl -s "$API_BASE/platform/brands" | jq '.brands[] | select(.brandId=="<brandId>")'
+```
 
 ---
 
-## Procedure
+## Legacy business module onboarding
+
+The steps below apply when adding a new **business module** (DLT config under `config/businesses/`). Brand-only onboarding uses the flow above.
+
 
 ### 1. Scaffold
 
