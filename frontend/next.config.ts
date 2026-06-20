@@ -17,6 +17,12 @@ const nextConfig: NextConfig = {
   basePath: basePath || undefined,
   ...tracingRoot,
   ...(process.env.NEXT_STANDALONE === 'true' ? { output: 'standalone' as const } : {}),
+  // Dynamic routes (e.g. /platform) read manifests at request time on Vercel lambdas.
+  outputFileTracingIncludes: {
+    '/platform': ['./.generated/**/*'],
+    '/platform/*': ['./.generated/**/*'],
+    '/platform/**/*': ['./.generated/**/*'],
+  },
   reactStrictMode: true,
   // Avoid Next.js 15.5 devtools segment explorer manifest corruption on Windows (HMR)
   devIndicators: false,

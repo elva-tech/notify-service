@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { FRONTEND_ROOT } from './paths';
+import bundledOpenApiManifest from '../.generated/openapi-manifest.json';
 
 export interface OpenApiRequestExample {
   name: string;
@@ -46,9 +47,14 @@ export interface OpenApiManifest {
 
 export const OPENAPI_MANIFEST_PATH = path.join(FRONTEND_ROOT, '.generated', 'openapi-manifest.json');
 
+/** Bundled at build time (prebuild). fs fallback supports local scripts only. */
 export function readOpenApiManifest(): OpenApiManifest {
-  const raw = fs.readFileSync(OPENAPI_MANIFEST_PATH, 'utf8');
-  return JSON.parse(raw) as OpenApiManifest;
+  try {
+    const raw = fs.readFileSync(OPENAPI_MANIFEST_PATH, 'utf8');
+    return JSON.parse(raw) as OpenApiManifest;
+  } catch {
+    return bundledOpenApiManifest as OpenApiManifest;
+  }
 }
 
 export function getOpenApiOperation(slug: string): OpenApiOperation | undefined {
