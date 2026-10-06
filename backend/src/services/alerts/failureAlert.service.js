@@ -7,6 +7,11 @@ const config = require('../../config/env');
 const { isMongoConfigured } = require('../../db/connection');
 const alertRepo = require('../../repositories/notificationAlert.repository');
 const emailService = require('../email/email.service');
+const {
+  buildPlatformUrl,
+  emailLink,
+  PLATFORM_EMAIL_PATHS,
+} = require('../email/platformEmailHtml');
 const { logSystem, logError: logErrorCategory } = require('../logging/businessLogger.service');
 
 const ALERT_TYPE = 'DELIVERY_FAILURE';
@@ -207,6 +212,7 @@ function renderAlertHtml(payload) {
 <p>Operational alert only. Customer message content is not included.</p>
 <table>${bodyRows}</table>
 ${attemptsBlock}
+<p style="margin-top:16px;">${emailLink(buildPlatformUrl(PLATFORM_EMAIL_PATHS.platformNotify), 'Open notify monitoring')}</p>
 </body></html>`;
 }
 

@@ -16,6 +16,11 @@ const {
   buildDailyMetrics,
   OPS_BRAND,
 } = require('./dailyReport.metrics');
+const {
+  buildPlatformUrl,
+  emailLink,
+  PLATFORM_EMAIL_PATHS,
+} = require('../email/platformEmailHtml');
 
 const REPORT_TYPE = dailyReportRepo.REPORT_TYPE;
 
@@ -87,6 +92,7 @@ ${empty ? '<p><em>No transactions recorded.</em></p>' : ''}
 <p><strong>Final failures by provider</strong></p><ul>${formatMap(s.failuresByProvider)}</ul>
 <p style="margin-top:20px;color:#71717a;font-size:12px;">Operational report only. No customer message bodies, secrets, or credentials are included.
 Provider attempts are not counted as separate transactions.</p>
+<p style="margin-top:16px;">${emailLink(buildPlatformUrl(PLATFORM_EMAIL_PATHS.platformDashboard), 'Open ELVA Notify platform')}</p>
 </body></html>`;
 }
 

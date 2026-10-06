@@ -1,34 +1,13 @@
 const config = require('../config/env');
 const { sendEmail } = require('./email/email.service');
+const {
+  buildPlatformUrl,
+  escapeHtml,
+  emailLink,
+  emailShell,
+  PLATFORM_EMAIL_PATHS,
+} = require('./email/platformEmailHtml');
 const { logSystem } = require('./logging/businessLogger.service');
-
-function platformBaseUrl() {
-  return (config.integrations.publicPlatformUrl || 'http://localhost:3000').replace(/\/$/, '');
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function emailLink(href, label) {
-  const safeHref = escapeHtml(href);
-  const safeLabel = escapeHtml(label);
-  return `<a href="${safeHref}" style="color:#2563eb;text-decoration:underline;">${safeLabel}</a>`;
-}
-
-function emailShell(innerHtml) {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8" /></head>
-<body style="font-family:Segoe UI,Arial,sans-serif;font-size:15px;line-height:1.5;color:#18181b;">
-${innerHtml}
-</body>
-</html>`;
-}
 
 /**
  * Normalizes approved/requested template selections into independent SMS + EMAIL buckets.
@@ -116,8 +95,8 @@ function buildCredentialsBlockHtml(request, issuedCredential = null) {
  * @returns {string}
  */
 function buildRequesterApprovedEmailHtml(request, issuedCredential = null) {
-  const docsUrl = `${platformBaseUrl()}/docs/api/authentication`;
-  const statusUrl = `${platformBaseUrl()}/onboard/status/${encodeURIComponent(request.id)}`;
+  const docsUrl = buildPlatformUrl(PLATFORM_EMAIL_PATHS.docsAuthentication);
+  const statusUrl = buildPlatformUrl(PLATFORM_EMAIL_PATHS.onboardStatus(request.id));
 
   return emailShell(`
     <h2>Your ELVA Notify integration was approved</h2>
@@ -165,8 +144,8 @@ async function notifyAdminNewRequest(request) {
     return false;
   }
 
-  const approvalsUrl = `${platformBaseUrl()}/platform/approvals`;
-  const statusUrl = `${platformBaseUrl()}/onboard/status/${encodeURIComponent(request.id)}`;
+  const approvalsUrl = buildPlatformUrl(PLATFORM_EMAIL_PATHS.platformApprovals);
+  const statusUrl = buildPlatformUrl(PLATFORM_EMAIL_PATHS.onboardStatus(request.id));
   const submitter = request.submittedBy ?? {};
   const { smsOtp, smsNotify, email } = formatApprovedTemplateSections(request.templates);
 
@@ -196,7 +175,7 @@ async function notifyRequesterSubmitted(request) {
   const email = request.submittedBy?.email;
   if (!email) return false;
 
-  const statusUrl = `${platformBaseUrl()}/onboard/status/${encodeURIComponent(request.id)}`;
+  const statusUrl = buildPlatformUrl(PLATFORM_EMAIL_PATHS.onboardStatus(request.id));
   const submitter = request.submittedBy ?? {};
   const { smsOtp, smsNotify, email: emailTemplates } = formatApprovedTemplateSections(request.templates);
 
@@ -242,7 +221,7 @@ async function notifyRequesterRejected(request) {
   const email = request.submittedBy?.email;
   if (!email) return false;
 
-  const onboardUrl = `${platformBaseUrl()}/onboard`;
+  const onboardUrl = buildPlatformUrl(PLATFORM_EMAIL_PATHS.onboard);
   const html = emailShell(`
     <h2>Your ELVA Notify integration request was not approved</h2>
     <p>Brand <strong>${escapeHtml(request.brandName)}</strong> (<code>${escapeHtml(request.brandId)}</code>)</p>
