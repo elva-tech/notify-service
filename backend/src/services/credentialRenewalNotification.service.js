@@ -1,24 +1,13 @@
 const config = require('../config/env');
 const { sendEmail } = require('./email/email.service');
+const {
+  buildPlatformUrl,
+  escapeHtml,
+  emailLink,
+  emailShell,
+  PLATFORM_EMAIL_PATHS,
+} = require('./email/platformEmailHtml');
 const { logSystem } = require('./logging/businessLogger.service');
-
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function emailShell(innerHtml) {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8" /></head>
-<body style="font-family:Segoe UI,Arial,sans-serif;font-size:15px;line-height:1.5;color:#18181b;">
-${innerHtml}
-</body>
-</html>`;
-}
 
 function isEmailDeliveryConfigured() {
   try {
@@ -87,6 +76,8 @@ async function notifyRequesterCredentialRenewed(ctx, newApiKey) {
       (${escapeHtml(formatScopes(ctx.scopes))}).
     </p>
     <p>Please store the new API key securely. It will not be shown again.</p>
+    <p>${emailLink(buildPlatformUrl(PLATFORM_EMAIL_PATHS.docsAuthentication), 'Read the authentication guide')}</p>
+    <p>${emailLink(buildPlatformUrl(PLATFORM_EMAIL_PATHS.playground), 'Open the API playground')}</p>
   `);
 
   return sendEmailSafe({
@@ -130,6 +121,7 @@ async function notifyAdminCredentialRenewed(ctx) {
       <li><strong>Actor:</strong> ${escapeHtml(ctx.actor ?? 'ops')}</li>
     </ul>
     <p>The new API key was delivered to the business requester only. It is not included in this message.</p>
+    <p>${emailLink(buildPlatformUrl(PLATFORM_EMAIL_PATHS.platformBusinesses), 'View applications in platform')}</p>
   `);
 
   return sendEmailSafe({

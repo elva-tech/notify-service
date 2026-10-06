@@ -1,6 +1,8 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 
+const { resolvePublicPlatformUrl } = require('./publicPlatformUrl');
+
 const port = parseInt(process.env.PORT || '3000', 10);
 
 if (Number.isNaN(port) || port < 1 || port > 65535) {
@@ -150,7 +152,7 @@ module.exports = {
       process.env.CREDENTIAL_RENEWAL_ADMIN_EMAIL?.trim()
       || 'arun.pn@elvatech.in',
     opsAdminToken: process.env.OPS_ADMIN_TOKEN?.trim() || null,
-    publicPlatformUrl: process.env.PLATFORM_PUBLIC_URL?.trim() || 'http://localhost:3000',
+    publicPlatformUrl: resolvePublicPlatformUrl(),
     integrationAppId: process.env.INTEGRATION_APP_ID?.trim() || null,
   },
   failureAlert: {
